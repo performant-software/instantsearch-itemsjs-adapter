@@ -1,0 +1,69 @@
+{
+  "name": "instantsearch-itemsjs-adapter",
+  "version": "2.0.0",
+  "description": "An adapter to use ItemsJs based client-side search with an Algolia Instantsearch front-end.",
+  "type": "module",
+  "main": "./lib/adapter.js",
+  "types": "./lib/adapter.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/adapter.d.ts",
+      "import": "./lib/adapter.js"
+    }
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib"
+  ],
+  "dependencies": {
+    "@algolia/client-search": "^4.11.0",
+    "itemsjs": "^2.1.14"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/preset-env": "^7.16.4",
+    "@babel/preset-typescript": "^7.16.0",
+    "@types/jest": "^27.0.3",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "babel-eslint": "^10.1.0",
+    "babel-jest": "^27.3.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "^27.3.1",
+    "prettier": "2.4.1",
+    "ts-jest": "^27.0.7",
+    "tsup": "^5.12.9",
+    "typescript": "^4.5.2"
+  },
+  "scripts": {
+    "test": "jest",
+    "eslint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
+    "eslint:fix": "npm run eslint -- --fix",
+    "build": "tsup --dts"
+  },
+  "keywords": [
+    "itemsjs",
+    "instantsearch",
+    "site-search",
+    "client-side",
+    "typescript"
+  ],
+  "author": "Unplatform",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter/issues"
+  },
+  "homepage": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter#readme",
+  "volta": {
+    "node": "14.18.1",
+    "npm": "7.24.2"
+  }
+}
