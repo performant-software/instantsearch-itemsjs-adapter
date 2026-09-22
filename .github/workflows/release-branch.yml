@@ -1,0 +1,51 @@
+name: Release branch
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# Serialize runs so two quick pushes to main can't race on the release branch.
+concurrency:
+  group: release-branch
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 14.x
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+      - run: npm run build
+      - name: Push build to release branch
+        run: |
+          dir="$RUNNER_TEMP/release"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git fetch --depth=1 origin release; then
+            git worktree add -B release "$dir" FETCH_HEAD
+          else
+            git worktree add --detach "$dir"
+            git -C "$dir" switch --orphan release
+          fi
+
+          # Replace the branch contents with the fresh build.
+          git -C "$dir" rm -rf --quiet --ignore-unmatch .
+          cp -r lib package.json README.md LICENSE "$dir"/
+          git -C "$dir" add -A -f
+
+          if git -C "$dir" diff --cached --quiet; then
+            echo "Build output unchanged; nothing to push."
+            exit 0
+          fi
+
+          git -C "$dir" commit -m "Build from ${GITHUB_SHA}"
+          git -C "$dir" push origin release
