@@ -63,7 +63,7 @@
   },
   "homepage": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter#readme",
   "volta": {
-    "node": "14.18.1",
-    "npm": "7.24.2"
+    "node": "24.21.0",
+    "npm": "12.1.0"
   }
 }

@@ -4,7 +4,7 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: ["src/*"],
   format: ["esm"],
-  target: "node14.18.1",
+  target: "node24",
   minify: true,
   bundle: true,
   outDir: "lib",
