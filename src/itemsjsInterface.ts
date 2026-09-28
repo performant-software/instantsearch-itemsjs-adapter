@@ -21,6 +21,11 @@ export interface SearchForFacetValuesQuery {
   params: SearchForFacetValuesQueryParams & SearchOptions;
 }
 
+export interface AdapterOptions {
+  // The document field holding each item's location, as { lat, lng } or [lat, lng]
+  geoLocationField?: string;
+}
+
 export interface ItemsJsOptions {
   aggregations?: object;
   sortings?: object;

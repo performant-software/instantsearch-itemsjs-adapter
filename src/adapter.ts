@@ -7,6 +7,7 @@ import {
   SearchForFacetValuesResponse,
 } from "@algolia/client-search";
 import {
+  AdapterOptions,
   ItemsJsBucket,
   ItemsJsOptions,
   SearchClient,
@@ -15,12 +16,15 @@ import {
 
 let index;
 
-export function getSearchClient(newIndex?: any): SearchClient {
+export function getSearchClient(
+  newIndex?: any,
+  options?: AdapterOptions
+): SearchClient {
   return {
     search: (queries: MultipleQueriesQuery[]) =>
-      performSearch(queries, index || newIndex),
+      performSearch(queries, index || newIndex, options),
     searchForFacetValues: (queries: SearchForFacetValuesQuery[]) =>
-      searchForFacetValues(queries, index || newIndex),
+      searchForFacetValues(queries, index || newIndex, options),
   };
 }
 
@@ -31,12 +35,13 @@ export function createIndex(data: object, options: ItemsJsOptions): any {
 
 export function performSearch(
   requests: MultipleQueriesQuery[],
-  index: any
+  index: any,
+  options?: AdapterOptions
 ): Readonly<Promise<MultipleQueriesResponse<object>>> {
   if (index) {
     let processingTimeMS = 0;
     const responses = requests.map((request) => {
-      const adaptedRequest = adaptRequest(request);
+      const adaptedRequest = adaptRequest(request, options);
       const itemsJsRes = index.search(adaptedRequest);
 
       processingTimeMS = processingTimeMS + itemsJsRes.timings.total;
@@ -66,14 +71,16 @@ export function performSearch(
 
 export function performSearchForFacetValues(
   requests: SearchForFacetValuesQuery[],
-  index: any
+  index: any,
+  options?: AdapterOptions
 ): Readonly<Promise<ItemsJsBucket[][]>> {
   if (index) {
     const responses = requests.map((request) => {
-      const { filter, ...input } = adaptRequest(request);
+      const { filter, ...input } = adaptRequest(request, options);
 
-      // aggregation() JSON-clones its input, which drops the numericFilters
-      // function. Resolve query + filter up front and pass the matching ids.
+      // aggregation() JSON-clones its input, which drops the filter function
+      // built from numericFilters and insideBoundingBox. Resolve query +
+      // filter up front and pass the matching ids.
       if (filter) {
         const matches = index.search({
           query: input.query,
@@ -103,9 +110,10 @@ export function performSearchForFacetValues(
 
 export function searchForFacetValues(
   requests: SearchForFacetValuesQuery[],
-  index: any
+  index: any,
+  options?: AdapterOptions
 ): Readonly<Promise<SearchForFacetValuesResponse[]>> {
-  const results = performSearchForFacetValues(requests, index);
+  const results = performSearchForFacetValues(requests, index, options);
 
   if (results) {
     return results.then((responses) =>

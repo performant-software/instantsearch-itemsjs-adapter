@@ -375,3 +375,86 @@ describe("searchForFacetValues", () => {
     ).toBeNull();
   });
 });
+
+describe("geosearch", () => {
+  const places = [
+    { id: 1, name: "Boston", region: "us", coordinates: [42.36, -71.06] },
+    { id: 2, name: "New York", region: "us", coordinates: [40.71, -74.01] },
+    { id: 3, name: "Paris", region: "eu", coordinates: [48.86, 2.35] },
+    { id: 4, name: "Fiji", region: "pacific", coordinates: [-17.71, 178.07] },
+    { id: 5, name: "Samoa", region: "pacific", coordinates: [-13.76, -172.1] },
+    { id: 6, name: "Nowhere", region: "us" },
+  ];
+
+  const placeOptions: ItemsJsOptions = {
+    searchableFields: ["name"],
+    query: "",
+    aggregations: { region: {} },
+  };
+
+  const geoOptions = { geoLocationField: "coordinates" };
+
+  const search = (insideBoundingBox: string) =>
+    performSearch(
+      [
+        {
+          indexName: "places",
+          params: {
+            query: "",
+            page: 0,
+            hitsPerPage: 10,
+            facets: ["region"],
+            insideBoundingBox,
+          },
+        },
+      ],
+      createIndex(places, placeOptions),
+      geoOptions
+    );
+
+  it("Returns only the hits inside the bounding box", async () => {
+    const { results } = await search("45,-70,40,-80");
+    const result = results[0] as any;
+
+    expect(result.hits.map((hit) => hit.name).sort()).toStrictEqual([
+      "Boston",
+      "New York",
+    ]);
+    expect(result.nbHits).toBe(2);
+    // ItemsJS keeps zero-count buckets when a filter function is applied
+    expect(result.facets).toStrictEqual({
+      region: { us: 2, eu: 0, pacific: 0 },
+    });
+  });
+
+  it("Returns the hits inside a box crossing the antimeridian", async () => {
+    const { results } = await search("-10,-170,-20,170");
+
+    expect(
+      (results[0] as any).hits.map((hit) => hit.name).sort()
+    ).toStrictEqual(["Fiji", "Samoa"]);
+  });
+
+  it("Applies the bounding box to facet value searches", async () => {
+    const [response] = await searchForFacetValues(
+      [
+        {
+          indexName: "places",
+          params: {
+            facetName: "region",
+            facetQuery: "",
+            query: "",
+            insideBoundingBox: "50,5,40,-80",
+          },
+        },
+      ],
+      createIndex(places, placeOptions),
+      geoOptions
+    );
+
+    expect(response.facetHits).toStrictEqual([
+      { value: "us", highlighted: "us", count: 2 },
+      { value: "eu", highlighted: "eu", count: 1 },
+    ]);
+  });
+});

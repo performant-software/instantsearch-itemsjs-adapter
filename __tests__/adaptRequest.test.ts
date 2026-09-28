@@ -6,6 +6,10 @@ import {
   adaptNumericFilters,
   parseRange,
   filterRegex,
+  adaptBoundingBox,
+  getLatLng,
+  parseBoundingBox,
+  wrapLongitude,
 } from "../src/adaptRequest";
 
 describe("filterRegex test", () => {
@@ -232,5 +236,93 @@ describe("adaptFilters tests", () => {
     }).toThrowError(
       new Error("request.params.facetFilters does not contain an array")
     );
+  });
+});
+
+describe("bounding box tests", () => {
+  it("wrapLongitude should map longitudes into [-180, 180)", () => {
+    expect(wrapLongitude(0)).toBe(0);
+    expect(wrapLongitude(-75)).toBe(-75);
+    expect(wrapLongitude(190)).toBe(-170);
+    expect(wrapLongitude(-190)).toBe(170);
+    expect(wrapLongitude(540)).toBe(-180);
+  });
+
+  it("parseBoundingBox should parse the string and array formats", () => {
+    const expected = {
+      northEast: { lat: 45, lng: -70 },
+      southWest: { lat: 40, lng: -80 },
+    };
+
+    expect(parseBoundingBox("45,-70,40,-80")).toStrictEqual(expected);
+    expect(parseBoundingBox([[45, -70, 40, -80]])).toStrictEqual(expected);
+  });
+
+  it("getLatLng should read objects and [lat, lng] arrays", () => {
+    expect(getLatLng({ lat: 1, lng: 2 })).toStrictEqual({ lat: 1, lng: 2 });
+    expect(getLatLng([1, 2])).toStrictEqual({ lat: 1, lng: 2 });
+    expect(getLatLng(undefined)).toBeNull();
+    expect(getLatLng([1])).toBeNull();
+  });
+
+  it("adaptBoundingBox should keep items inside the box", () => {
+    const filter = adaptBoundingBox("45,-70,40,-80", "coordinates");
+
+    expect(filter({ coordinates: [42, -75] })).toBe(true);
+    expect(filter({ coordinates: [45, -70] })).toBe(true);
+    expect(filter({ coordinates: [46, -75] })).toBe(false);
+    expect(filter({ coordinates: [42, -81] })).toBe(false);
+    expect(filter({})).toBe(false);
+  });
+
+  it("adaptBoundingBox should handle boxes crossing the antimeridian", () => {
+    const filter = adaptBoundingBox("10,-170,-10,170", "_geoloc");
+
+    expect(filter({ _geoloc: { lat: 0, lng: 175 } })).toBe(true);
+    expect(filter({ _geoloc: { lat: 0, lng: -175 } })).toBe(true);
+    expect(filter({ _geoloc: { lat: 0, lng: 0 } })).toBe(false);
+  });
+
+  it("adaptBoundingBox should handle wrapped longitudes", () => {
+    // The map was panned east past the antimeridian: 170 to 190 (-170)
+    const filter = adaptBoundingBox("10,190,-10,170", "_geoloc");
+
+    expect(filter({ _geoloc: { lat: 0, lng: 175 } })).toBe(true);
+    expect(filter({ _geoloc: { lat: 0, lng: -175 } })).toBe(true);
+    expect(filter({ _geoloc: { lat: 0, lng: 0 } })).toBe(false);
+  });
+
+  it("adaptRequest should combine insideBoundingBox with numericFilters", () => {
+    const { filter } = adaptRequest(
+      {
+        indexName: "places",
+        params: {
+          query: "",
+          page: 0,
+          hitsPerPage: 10,
+          insideBoundingBox: "45,-70,40,-80",
+          numericFilters: ["price<=10"],
+        },
+      },
+      { geoLocationField: "coordinates" }
+    );
+
+    const match = filter as (item) => boolean;
+
+    expect(match({ coordinates: [42, -75], price: 5 })).toBe(true);
+    expect(match({ coordinates: [42, -75], price: 20 })).toBe(false);
+    expect(match({ coordinates: [0, 0], price: 5 })).toBe(false);
+  });
+
+  it("adaptRequest should default to the _geoloc field", () => {
+    const { filter } = adaptRequest({
+      indexName: "places",
+      params: { query: "", page: 0, insideBoundingBox: "45,-70,40,-80" },
+    });
+
+    const match = filter as (item) => boolean;
+
+    expect(match({ _geoloc: { lat: 42, lng: -75 } })).toBe(true);
+    expect(match({ coordinates: [42, -75] })).toBe(false);
   });
 });

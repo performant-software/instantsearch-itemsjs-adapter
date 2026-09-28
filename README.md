@@ -67,6 +67,16 @@ const searchClient = getSearchClient(index);
 ```
 `options` Options are from the ItemsJS API found here: [ItemsJS](https://github.com/itemsapi/itemsjs)
 
+### Geosearch
+
+The adapter applies `insideBoundingBox` (as sent by the GeoSearch widget or `useGeoSearch`) as a filter. By default it reads each item's location from `_geoloc`, as either `{ lat, lng }` or `[lat, lng]`. Pass `geoLocationField` to read it from another field:
+
+```js
+const searchClient = getSearchClient(index, { geoLocationField: "coordinates" });
+```
+
+`performSearch` and `searchForFacetValues` accept the same options as a third argument.
+
 ## Demo
 
 To see an implementation of this adapter go to [unplatform-io/clientside-instantsearch-demo](https://github.com/unplatform-io/clientside-instantsearch-demo).
@@ -83,6 +93,7 @@ To see an implementation of this adapter go to [unplatform-io/clientside-instant
 | ConfigureRelatedItems | ❌ | Is not supported by ItemsJS |
 | [CurrentRefinements](#%EF%B8%8F-currentrefinements) | ✔️ |
 | DynamicWidgets | ❌ | Cannot be imported from react-instanstsearch-dom (version 6.12.1) |
+| [GeoSearch](#geosearch) | ✔️ | Supports `insideBoundingBox` only |
 | [HierarchicalMenu](#%EF%B8%8F-hierarchicalmenu) | ✔️ |
 | Highlight | ❌ | Is not supported by ItemsJS |
 | [Hits](#%EF%B8%8F-hits) | ✔️ |

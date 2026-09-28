@@ -1,9 +1,15 @@
 //Instantsearch request to itemsjs request
 import { MultipleQueriesQuery } from "@algolia/client-search";
-import { ItemsJsRequest } from "./itemsjsInterface";
+import { AdapterOptions, ItemsJsRequest } from "./itemsjsInterface";
 
-export function adaptRequest(request: MultipleQueriesQuery): ItemsJsRequest {
+const DEFAULT_GEO_LOCATION_FIELD = "_geoloc";
+
+export function adaptRequest(
+  request: MultipleQueriesQuery,
+  options: AdapterOptions = {}
+): ItemsJsRequest {
   const numericFilters = <string[]>request.params.numericFilters;
+  const insideBoundingBox = request.params.insideBoundingBox;
   const facets = <string[]>request.params.facets;
   const facetFilters = request.params.facetFilters;
   const sort = request.indexName; // IndexName will be assigned the SortBy value if selected.
@@ -20,8 +26,22 @@ export function adaptRequest(request: MultipleQueriesQuery): ItemsJsRequest {
     response.aggregations = facets;
   }
 
+  const filters = [];
+
   if (numericFilters && numericFilters.length > 0) {
-    const filters = adaptNumericFilters(numericFilters);
+    filters.push(...adaptNumericFilters(numericFilters));
+  }
+
+  if (insideBoundingBox) {
+    filters.push(
+      adaptBoundingBox(
+        insideBoundingBox,
+        options.geoLocationField || DEFAULT_GEO_LOCATION_FIELD
+      )
+    );
+  }
+
+  if (filters.length > 0) {
     response.filter = (item) => filters.every((filter) => filter(item));
   }
 
@@ -106,4 +126,60 @@ export function adaptNumericFilters(ranges) {
   });
 
   return filters;
+}
+
+export function wrapLongitude(longitude: number): number {
+  // Maps can report longitudes outside [-180, 180] once the world has wrapped
+  return ((((longitude + 180) % 360) + 360) % 360) - 180;
+}
+
+export function parseBoundingBox(
+  insideBoundingBox: string | ReadonlyArray<ReadonlyArray<number>>
+) {
+  // InstantSearch sends "neLat,neLng,swLat,swLng"; Algolia also accepts [[neLat, neLng, swLat, swLng]]
+  const values =
+    typeof insideBoundingBox === "string"
+      ? insideBoundingBox.split(",")
+      : insideBoundingBox[0];
+
+  const [northEastLat, northEastLng, southWestLat, southWestLng] =
+    values.map(Number);
+
+  return {
+    northEast: { lat: northEastLat, lng: wrapLongitude(northEastLng) },
+    southWest: { lat: southWestLat, lng: wrapLongitude(southWestLng) },
+  };
+}
+
+export function getLatLng(value): { lat: number; lng: number } | null {
+  // Accepts Algolia's { lat, lng } objects and Typesense's [lat, lng] geopoints
+  if (Array.isArray(value) && value.length === 2) {
+    return { lat: Number(value[0]), lng: Number(value[1]) };
+  }
+
+  if (value && typeof value === "object" && "lat" in value && "lng" in value) {
+    return { lat: Number(value.lat), lng: Number(value.lng) };
+  }
+
+  return null;
+}
+
+export function adaptBoundingBox(
+  insideBoundingBox: string | ReadonlyArray<ReadonlyArray<number>>,
+  field: string
+) {
+  const { northEast, southWest } = parseBoundingBox(insideBoundingBox);
+  const crossesAntimeridian = southWest.lng > northEast.lng;
+
+  return (item) => {
+    const point = getLatLng(item[field]);
+
+    if (!point || point.lat < southWest.lat || point.lat > northEast.lat) {
+      return false;
+    }
+
+    return crossesAntimeridian
+      ? point.lng >= southWest.lng || point.lng <= northEast.lng
+      : point.lng >= southWest.lng && point.lng <= northEast.lng;
+  };
 }
