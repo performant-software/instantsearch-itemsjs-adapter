@@ -19,7 +19,7 @@
   ],
   "dependencies": {
     "@algolia/client-search": "^4.11.0",
-    "itemsjs": "^2.1.14"
+    "itemsjs": "^2.4.4"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
