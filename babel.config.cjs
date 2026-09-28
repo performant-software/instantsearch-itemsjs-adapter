@@ -9,6 +9,5 @@ module.exports = {
       },
     ],
     "@babel/preset-typescript",
-    "ts-jest/presets/js-with-babel",
   ],
 };
