@@ -20,7 +20,7 @@ export function getSearchClient(newIndex?: any): SearchClient {
     search: (queries: MultipleQueriesQuery[]) =>
       performSearch(queries, index || newIndex),
     searchForFacetValues: (queries: SearchForFacetValuesQuery[]) =>
-      performSearchForFacetValuesAdapted(queries, index || newIndex),
+      searchForFacetValues(queries, index || newIndex),
   };
 }
 
@@ -101,7 +101,7 @@ export function performSearchForFacetValues(
   return null;
 }
 
-function performSearchForFacetValuesAdapted(
+export function searchForFacetValues(
   requests: SearchForFacetValuesQuery[],
   index: any
 ): Readonly<Promise<SearchForFacetValuesResponse[]>> {
@@ -109,13 +109,7 @@ function performSearchForFacetValuesAdapted(
 
   if (results) {
     return results.then((responses) =>
-      responses.map((buckets, i) =>
-        adaptFacetHits(
-          buckets,
-          requests[i].params.facetQuery,
-          requests[i].params.maxFacetHits
-        )
-      )
+      responses.map((buckets, i) => adaptFacetHits(buckets, requests[i].params))
     );
   }
 

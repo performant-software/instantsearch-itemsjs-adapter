@@ -126,32 +126,79 @@ describe("adaptFacetsStats tests", () => {
 });
 
 describe("adaptFacetHits tests", () => {
-  const buckets = [
-    { key: "Blue", doc_count: 5, selected: false },
-    { key: "Light blue", doc_count: 3, selected: false },
-    { key: "Red", doc_count: 2, selected: false },
-    { key: "Navy blue", doc_count: 0, selected: false },
-  ];
+  const bucket = (key: string, doc_count = 1) => ({
+    key,
+    doc_count,
+    selected: false,
+  });
 
-  it("filters by facetQuery (case-insensitive) and drops empty buckets", () => {
-    expect(adaptFacetHits(buckets, "BLUE")).toStrictEqual({
-      facetHits: [
-        { value: "Blue", highlighted: "Blue", count: 5 },
-        { value: "Light blue", highlighted: "Light blue", count: 3 },
-      ],
-      exhaustiveFacetsCount: true,
-    });
+  const tags = { highlightPreTag: "[", highlightPostTag: "]" };
+
+  const highlighted = (buckets, params = {}) =>
+    adaptFacetHits(buckets, params).facetHits.map((hit) => hit.highlighted);
+
+  it("matches the start of any word in the value", () => {
+    expect(
+      highlighted([bucket("New York"), bucket("Yonkers"), bucket("Albany")], {
+        ...tags,
+        facetQuery: "yo",
+      })
+    ).toStrictEqual(["New [Yo]rk", "[Yo]nkers"]);
+  });
+
+  it("does not match the middle of a word", () => {
+    expect(
+      highlighted([bucket("Boston")], { ...tags, facetQuery: "ost" })
+    ).toStrictEqual([]);
+  });
+
+  it("requires every word in the query to match", () => {
+    expect(
+      highlighted([bucket("New York"), bucket("New Haven")], {
+        ...tags,
+        facetQuery: "new yo",
+      })
+    ).toStrictEqual(["[New] [Yo]rk"]);
+  });
+
+  it("ignores case and diacritics, highlighting the original text", () => {
+    expect(
+      highlighted([bucket("Émile Zola")], { ...tags, facetQuery: "EMI" })
+    ).toStrictEqual(["[Émi]le Zola"]);
+    expect(
+      highlighted([bucket("Emile Zola")], { ...tags, facetQuery: "émi" })
+    ).toStrictEqual(["[Emi]le Zola"]);
   });
 
   it("returns every non-empty bucket without a facetQuery", () => {
-    expect(adaptFacetHits(buckets).facetHits.map((h) => h.value)).toStrictEqual(
-      ["Blue", "Light blue", "Red"]
-    );
+    expect(
+      highlighted([bucket("Boston"), bucket("Cambridge"), bucket("Salem", 0)])
+    ).toStrictEqual(["Boston", "Cambridge"]);
   });
 
-  it("limits results to maxFacetHits", () => {
-    expect(adaptFacetHits(buckets, "", 1).facetHits).toStrictEqual([
-      { value: "Blue", highlighted: "Blue", count: 5 },
-    ]);
+  it("orders by count and limits results to maxFacetHits", () => {
+    const buckets = [
+      bucket("Book clubs", 1),
+      bucket("Book signings", 5),
+      bucket("Bookstores", 3),
+    ];
+
+    expect(
+      adaptFacetHits(buckets, { facetQuery: "book", maxFacetHits: 2 })
+    ).toStrictEqual({
+      facetHits: [
+        {
+          value: "Book signings",
+          highlighted: "<mark>Book</mark> signings",
+          count: 5,
+        },
+        {
+          value: "Bookstores",
+          highlighted: "<mark>Book</mark>stores",
+          count: 3,
+        },
+      ],
+      exhaustiveFacetsCount: true,
+    });
   });
 });

@@ -5,7 +5,11 @@ import {
   SearchForFacetValuesResponse,
   SearchResponse,
 } from "@algolia/client-search";
-import { ItemsJsBucket, ItemsJsResponse } from "./itemsjsInterface";
+import {
+  ItemsJsBucket,
+  ItemsJsResponse,
+  SearchForFacetValuesQuery,
+} from "./itemsjsInterface";
 
 export function adaptResponse(
   response: ItemsJsResponse,
@@ -71,24 +75,93 @@ export function adaptFacetsStats(
   return instantsearchFacetsStats;
 }
 
+const DEFAULT_MAX_FACET_HITS = 10;
+const DEFAULT_HIGHLIGHT_PRE_TAG = "<mark>";
+const DEFAULT_HIGHLIGHT_POST_TAG = "</mark>";
+
+const WORD = /[\p{L}\p{N}]+/gu;
+
+const fold = (text: string) =>
+  text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+function getPrefixLength(word: string, prefix: string): number {
+  let length = 0;
+  let folded = "";
+
+  for (const character of word) {
+    if (folded.length >= prefix.length) {
+      break;
+    }
+
+    folded += fold(character);
+    length += character.length;
+  }
+
+  return length;
+}
+
 export function adaptFacetHits(
   buckets: ItemsJsBucket[],
-  facetQuery = "",
-  maxFacetHits = 10
+  params: Partial<SearchForFacetValuesQuery["params"]> = {}
 ): SearchForFacetValuesResponse {
-  const search = facetQuery.toLowerCase();
+  const {
+    facetQuery = "",
+    highlightPostTag = DEFAULT_HIGHLIGHT_POST_TAG,
+    highlightPreTag = DEFAULT_HIGHLIGHT_PRE_TAG,
+    maxFacetHits = DEFAULT_MAX_FACET_HITS,
+  } = params;
 
-  const facetHits = buckets
-    .filter(
-      ({ key, doc_count }) =>
-        doc_count > 0 && key.toLowerCase().includes(search)
-    )
-    .slice(0, maxFacetHits)
-    .map(({ key, doc_count }) => ({
-      value: key,
-      highlighted: key, // Highlighting not supported
-      count: doc_count,
-    }));
+  const queryWords = fold(facetQuery).match(WORD) || [];
+
+  const highlight = (value: string) => {
+    let highlighted = "";
+    let offset = 0;
+    const matched = new Set<string>();
+
+    for (const { 0: word, index } of value.matchAll(WORD)) {
+      const foldedWord = fold(word);
+      const prefixes = queryWords.filter((queryWord) =>
+        foldedWord.startsWith(queryWord)
+      );
+
+      if (prefixes.length === 0) {
+        continue;
+      }
+
+      prefixes.forEach((prefix) => matched.add(prefix));
+
+      const longest = prefixes.reduce((a, b) => (b.length > a.length ? b : a));
+      const length = getPrefixLength(word, longest);
+
+      highlighted +=
+        value.slice(offset, index) +
+        highlightPreTag +
+        word.slice(0, length) +
+        highlightPostTag;
+      offset = index + length;
+    }
+
+    return queryWords.every((queryWord) => matched.has(queryWord))
+      ? highlighted + value.slice(offset)
+      : null;
+  };
+
+  const facetHits = [];
+
+  // Array.prototype.sort is stable, so values with equal counts keep their order
+  const sorted = [...buckets].sort((a, b) => b.doc_count - a.doc_count);
+
+  for (const { key, doc_count } of sorted) {
+    if (facetHits.length >= maxFacetHits) {
+      break;
+    }
+
+    const highlighted = doc_count > 0 ? highlight(key) : null;
+
+    if (highlighted !== null) {
+      facetHits.push({ value: key, highlighted, count: doc_count });
+    }
+  }
 
   return {
     facetHits,

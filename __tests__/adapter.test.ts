@@ -2,6 +2,7 @@ import products from "./products.json";
 import {
   performSearch,
   performSearchForFacetValues,
+  searchForFacetValues,
   createIndex,
   getSearchClient,
 } from "../src/adapter";
@@ -106,8 +107,16 @@ describe("getSearchClient", () => {
 
     expect(response.exhaustiveFacetsCount).toBe(true);
     expect(response.facetHits).toStrictEqual([
-      { value: "women's clothing", highlighted: "women's clothing", count: 6 },
-      { value: "men's clothing", highlighted: "men's clothing", count: 4 },
+      {
+        value: "women's clothing",
+        highlighted: "women's <mark>cloth</mark>ing",
+        count: 6,
+      },
+      {
+        value: "men's clothing",
+        highlighted: "men's <mark>cloth</mark>ing",
+        count: 4,
+      },
     ]);
   });
 });
@@ -285,6 +294,80 @@ describe("performSearchForFacetValues", () => {
           {
             indexName: "instant_search",
             params: { facetName: "price", facetQuery: "" },
+          },
+        ],
+        null
+      )
+    ).toBeNull();
+  });
+});
+
+describe("searchForFacetValues", () => {
+  const cities = Array.from({ length: 30 }, (_value, i) => `City ${i}`);
+
+  const index = createIndex(
+    [
+      ...cities.map((city, i) => ({
+        id: `${i}`,
+        name: city,
+        names: [city],
+        author: "Pratchett",
+        year: 2000 + i,
+      })),
+      {
+        id: "paris",
+        name: "Paris",
+        names: ["Paris", "Paname"],
+        author: "Hugo",
+        year: 1862,
+      },
+    ],
+    {
+      aggregations: {
+        names: { size: 20, conjunction: false },
+        author: { size: 20, conjunction: false },
+      },
+      searchableFields: ["name"],
+      query: "",
+    }
+  );
+
+  const search = async (params) => {
+    const [response] = await searchForFacetValues(
+      [{ indexName: "places", params: { facetName: "names", ...params } }],
+      index
+    );
+
+    return response.facetHits.map(({ value }) => value);
+  };
+
+  it("finds values beyond the aggregation size", async () => {
+    expect(await search({ facetQuery: "city 29" })).toStrictEqual(["City 29"]);
+  });
+
+  it("counts the values within the other filters", async () => {
+    expect(
+      await search({ facetQuery: "pa", facetFilters: [["author:Hugo"]] })
+    ).toStrictEqual(["Paname", "Paris"]);
+    expect(
+      await search({ facetQuery: "pa", facetFilters: [["author:Pratchett"]] })
+    ).toStrictEqual([]);
+    expect(
+      await search({
+        facetQuery: "city",
+        numericFilters: ["year>=2028"],
+        maxFacetHits: 5,
+      })
+    ).toStrictEqual(["City 28", "City 29"]);
+  });
+
+  it("returns null when there is no index", () => {
+    expect(
+      searchForFacetValues(
+        [
+          {
+            indexName: "places",
+            params: { facetName: "names", facetQuery: "" },
           },
         ],
         null
