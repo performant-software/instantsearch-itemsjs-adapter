@@ -2,13 +2,23 @@ import {
   Hit,
   MultipleQueriesQuery,
   MultipleQueriesResponse,
+  SearchForFacetValuesQueryParams,
+  SearchForFacetValuesResponse,
+  SearchOptions,
 } from "@algolia/client-search";
 
 export interface SearchClient {
   search: (
     queries: MultipleQueriesQuery[]
   ) => Readonly<Promise<MultipleQueriesResponse<object>>>;
-  searchForFacetValues: () => void;
+  searchForFacetValues: (
+    queries: SearchForFacetValuesQuery[]
+  ) => Readonly<Promise<SearchForFacetValuesResponse[]>>;
+}
+
+export interface SearchForFacetValuesQuery {
+  indexName: string;
+  params: SearchForFacetValuesQueryParams & SearchOptions;
 }
 
 export interface ItemsJsOptions {
@@ -30,6 +40,7 @@ export interface ItemsJsRequest {
   aggregations?: string[];
   filter?: object;
   sort?: string;
+  ids?: Array<string | number>;
 }
 
 export interface ItemsJsResponse {
@@ -48,4 +59,10 @@ export interface ItemsJsResponse {
     items: Array<Hit<object>>;
     aggregations: object;
   };
+}
+
+export interface ItemsJsBucket {
+  key: string;
+  doc_count: number;
+  selected: boolean;
 }

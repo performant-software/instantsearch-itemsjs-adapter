@@ -1,7 +1,11 @@
 //Itemsjs response to Instantsearch response
 
-import { Hit, SearchResponse } from "@algolia/client-search";
-import { ItemsJsResponse } from "./itemsjsInterface";
+import {
+  Hit,
+  SearchForFacetValuesResponse,
+  SearchResponse,
+} from "@algolia/client-search";
+import { ItemsJsBucket, ItemsJsResponse } from "./itemsjsInterface";
 
 export function adaptResponse(
   response: ItemsJsResponse,
@@ -65,4 +69,29 @@ export function adaptFacetsStats(
   });
 
   return instantsearchFacetsStats;
+}
+
+export function adaptFacetHits(
+  buckets: ItemsJsBucket[],
+  facetQuery = "",
+  maxFacetHits = 10
+): SearchForFacetValuesResponse {
+  const search = facetQuery.toLowerCase();
+
+  const facetHits = buckets
+    .filter(
+      ({ key, doc_count }) =>
+        doc_count > 0 && key.toLowerCase().includes(search)
+    )
+    .slice(0, maxFacetHits)
+    .map(({ key, doc_count }) => ({
+      value: key,
+      highlighted: key, // Highlighting not supported
+      count: doc_count,
+    }));
+
+  return {
+    facetHits,
+    exhaustiveFacetsCount: true,
+  };
 }

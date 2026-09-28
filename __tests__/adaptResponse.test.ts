@@ -3,6 +3,7 @@ import {
   adaptHit,
   adaptResponse,
   adaptFacetsStats,
+  adaptFacetHits,
 } from "../src/adaptResponse";
 import { ItemsJsResponse } from "../src/itemsjsInterface";
 import outputs from "./adaptResponseOutput.json";
@@ -121,5 +122,36 @@ describe("adaptFacetsStats tests", () => {
 
     const facetStats = adaptFacetsStats(aggregation);
     expect(facetStats).toStrictEqual(result);
+  });
+});
+
+describe("adaptFacetHits tests", () => {
+  const buckets = [
+    { key: "Blue", doc_count: 5, selected: false },
+    { key: "Light blue", doc_count: 3, selected: false },
+    { key: "Red", doc_count: 2, selected: false },
+    { key: "Navy blue", doc_count: 0, selected: false },
+  ];
+
+  it("filters by facetQuery (case-insensitive) and drops empty buckets", () => {
+    expect(adaptFacetHits(buckets, "BLUE")).toStrictEqual({
+      facetHits: [
+        { value: "Blue", highlighted: "Blue", count: 5 },
+        { value: "Light blue", highlighted: "Light blue", count: 3 },
+      ],
+      exhaustiveFacetsCount: true,
+    });
+  });
+
+  it("returns every non-empty bucket without a facetQuery", () => {
+    expect(adaptFacetHits(buckets).facetHits.map((h) => h.value)).toStrictEqual(
+      ["Blue", "Light blue", "Red"]
+    );
+  });
+
+  it("limits results to maxFacetHits", () => {
+    expect(adaptFacetHits(buckets, "", 1).facetHits).toStrictEqual([
+      { value: "Blue", highlighted: "Blue", count: 5 },
+    ]);
   });
 });

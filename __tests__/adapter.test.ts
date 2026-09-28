@@ -1,5 +1,10 @@
 import products from "./products.json";
-import { performSearch, createIndex, getSearchClient } from "../src/adapter";
+import {
+  performSearch,
+  performSearchForFacetValues,
+  createIndex,
+  getSearchClient,
+} from "../src/adapter";
 import {
   MultipleQueriesQuery,
   MultipleQueriesResponse,
@@ -85,15 +90,25 @@ describe("getSearchClient", () => {
 
     const index = createIndex(products, options);
 
-    expect(() => {
-      getSearchClient(index).searchForFacetValues();
-    }).toThrowError(new Error("Not implemented"));
     expect(getSearchClient(index).search(queries)).toBeDefined();
-
-    expect(() => {
-      getSearchClient().searchForFacetValues();
-    }).toThrowError(new Error("Not implemented"));
     expect(getSearchClient().search(queries)).toBeDefined();
+  });
+
+  it("searchForFacetValues returns facet hits matching the facetQuery", async () => {
+    const index = createIndex(products, options);
+
+    const [response] = await getSearchClient(index).searchForFacetValues([
+      {
+        indexName: "instant_search",
+        params: { facetName: "category.lvl0", facetQuery: "cloth", query: "" },
+      },
+    ]);
+
+    expect(response.exhaustiveFacetsCount).toBe(true);
+    expect(response.facetHits).toStrictEqual([
+      { value: "women's clothing", highlighted: "women's clothing", count: 6 },
+      { value: "men's clothing", highlighted: "men's clothing", count: 4 },
+    ]);
   });
 });
 
@@ -158,5 +173,122 @@ describe("performSearch", () => {
       await performSearch(requests, index);
 
     expect(response).toBeNull();
+  });
+});
+
+describe("performSearchForFacetValues", () => {
+  it("Returns every bucket for the requested facet", async () => {
+    const index = createIndex(products, options);
+
+    const response = await performSearchForFacetValues(
+      [
+        {
+          indexName: "instant_search",
+          params: { facetName: "price", facetQuery: "", query: "" },
+        },
+      ],
+      index
+    );
+
+    expect(response[0].length).toBe(new Set(products.map((p) => p.price)).size);
+    expect(response[0].length).toBeGreaterThan(10);
+  });
+
+  it("Applies facetFilters", async () => {
+    const index = createIndex(products, options);
+
+    const response = await performSearchForFacetValues(
+      [
+        {
+          indexName: "instant_search",
+          params: {
+            facetName: "category.lvl0",
+            facetQuery: "",
+            query: "",
+            facetFilters: [["category.lvl0:electronics"]],
+          },
+        },
+      ],
+      index
+    );
+
+    expect(response[0]).toContainEqual({
+      key: "electronics",
+      doc_count: 6,
+      selected: true,
+    });
+  });
+
+  it("Applies numericFilters together with facetFilters", async () => {
+    const index = createIndex(products, options);
+
+    const response = await performSearchForFacetValues(
+      [
+        {
+          indexName: "instant_search",
+          params: {
+            facetName: "category.lvl0",
+            facetQuery: "",
+            query: "",
+            facetFilters: [["category.lvl0:electronics"]],
+            numericFilters: ["price<=100"],
+          },
+        },
+      ],
+      index
+    );
+
+    const expectedCount = products.filter(
+      (p) => p["category.lvl0"] === "electronics" && p.price <= 100
+    ).length;
+
+    expect(response[0]).toContainEqual({
+      key: "electronics",
+      doc_count: expectedCount,
+      selected: true,
+    });
+  });
+
+  it("Applies the query together with numericFilters", async () => {
+    const index = createIndex(products, options);
+
+    const response = await performSearchForFacetValues(
+      [
+        {
+          indexName: "instant_search",
+          params: {
+            facetName: "category.lvl0",
+            facetQuery: "",
+            query: "shirt",
+            numericFilters: ["price<=20"],
+          },
+        },
+      ],
+      index
+    );
+
+    const expected = index.search({
+      query: "shirt",
+      filter: (item) => item.price <= 20,
+      per_page: products.length,
+    }).data.items;
+
+    const total = response[0].reduce((sum, b) => sum + b.doc_count, 0);
+    expect(expected.length).toBeGreaterThan(0);
+    expect(total).toBe(expected.length);
+  });
+
+  it("Returns null when there is no index", () => {
+    expect(
+      performSearchForFacetValues(
+        [
+          {
+            indexName: "instant_search",
+            params: { facetName: "price", facetQuery: "" },
+          },
+        ],
+        null
+      )
+    ).toBeNull();
   });
 });
