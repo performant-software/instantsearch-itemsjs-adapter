@@ -8,6 +8,9 @@ interface SearchForFacetValuesQuery {
     indexName: string;
     params: SearchForFacetValuesQueryParams & SearchOptions;
 }
+interface AdapterOptions {
+    geoLocationField?: string;
+}
 interface ItemsJsOptions {
     aggregations?: object;
     sortings?: object;
@@ -51,4 +54,4 @@ interface ItemsJsBucket {
     selected: boolean;
 }
 
-export { ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery };
+export { AdapterOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery };
