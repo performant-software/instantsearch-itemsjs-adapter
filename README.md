@@ -234,7 +234,7 @@ The `Menu` widget allows a user to filter on a single value for an attribute.
 | limit | ✔️ |
 | showMore | ✔️ |
 | showMoreLimit | ✔️ |
-| searchable | ❌ | Is not supported by ItemsJS, ⚠️Warning: when set true UI will change but throws error when used |
+| searchable | ✔️ | Case-insensitive substring match, no highlighting. With numericFilters active, items need a truthy `id` |
 | transformItems | ✔️ |
 | translations | ✔️ |
 
@@ -353,7 +353,7 @@ The `RefinementList` widget allows a user to filter on a facet/field.
 | limit | ✔️ |
 | showMore | ✔️ |
 | showMoreLimit | ✔️ |
-| searchable | ❌ | Is not supported by ItemsJS, ⚠️Warning: when set true UI will change but throws error when used |
+| searchable | ✔️ | Case-insensitive substring match, no highlighting. With numericFilters active, items need a truthy `id` |
 | transformItems | ✔️ |
 | translations | ✔️ |
 

@@ -1,8 +1,12 @@
-import { MultipleQueriesQuery, MultipleQueriesResponse, Hit } from '@algolia/client-search';
+import { MultipleQueriesQuery, MultipleQueriesResponse, SearchForFacetValuesResponse, SearchForFacetValuesQueryParams, SearchOptions, Hit } from '@algolia/client-search';
 
 interface SearchClient {
     search: (queries: MultipleQueriesQuery[]) => Readonly<Promise<MultipleQueriesResponse<object>>>;
-    searchForFacetValues: () => void;
+    searchForFacetValues: (queries: SearchForFacetValuesQuery[]) => Readonly<Promise<SearchForFacetValuesResponse[]>>;
+}
+interface SearchForFacetValuesQuery {
+    indexName: string;
+    params: SearchForFacetValuesQueryParams & SearchOptions;
 }
 interface ItemsJsOptions {
     aggregations?: object;
@@ -22,6 +26,7 @@ interface ItemsJsRequest {
     aggregations?: string[];
     filter?: object;
     sort?: string;
+    ids?: Array<string | number>;
 }
 interface ItemsJsResponse {
     pagination: {
@@ -40,5 +45,10 @@ interface ItemsJsResponse {
         aggregations: object;
     };
 }
+interface ItemsJsBucket {
+    key: string;
+    doc_count: number;
+    selected: boolean;
+}
 
-export { ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient };
+export { ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery };
