@@ -1,5 +1,5 @@
 import { SearchResponse, Hit, SearchForFacetValuesResponse } from '@algolia/client-search';
-import { ItemsJsResponse, ItemsJsBucket } from './itemsjsInterface.js';
+import { ItemsJsResponse, ItemsJsBucket, SearchForFacetValuesQuery } from './itemsjsInterface.js';
 
 declare function adaptResponse(response: ItemsJsResponse, query: string, processingTimeMS: number): SearchResponse;
 declare function adaptHit(item: any): Hit<object>;
@@ -10,6 +10,6 @@ declare function adaptFacetsStats(itemsJsFacetsStats: object): Record<string, {
     avg: number;
     sum: number;
 }>;
-declare function adaptFacetHits(buckets: ItemsJsBucket[], facetQuery?: string, maxFacetHits?: number): SearchForFacetValuesResponse;
+declare function adaptFacetHits(buckets: ItemsJsBucket[], params?: Partial<SearchForFacetValuesQuery["params"]>): SearchForFacetValuesResponse;
 
 export { adaptFacetHits, adaptFacets, adaptFacetsStats, adaptHit, adaptResponse };
