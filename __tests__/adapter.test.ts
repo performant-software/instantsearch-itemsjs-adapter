@@ -175,6 +175,39 @@ describe("performSearch", () => {
     });
   });
 
+  it("Highlights the query in hits with the requested tags", async () => {
+    const index = createIndex(products, options);
+
+    const response: Readonly<MultipleQueriesResponse<object>> =
+      await performSearch(
+        [
+          {
+            ...requests[0],
+            params: {
+              ...requests[0].params,
+              query: "backpack",
+              attributesToHighlight: ["title"],
+              attributesToSnippet: ["description:4"],
+            },
+          },
+        ],
+        index
+      );
+
+    expect(response.results[0].hits[0]._highlightResult).toStrictEqual({
+      title: {
+        value:
+          "Fjallraven - Foldsack No. 1 <ais-highlight-0000000000>Backpack</ais-highlight-0000000000>, Fits 15 Laptops",
+        matchLevel: "full",
+        matchedWords: ["backpack"],
+        fullyHighlighted: false,
+      },
+    });
+    expect(response.results[0].hits[0]._snippetResult).toStrictEqual({
+      description: { value: "Your perfect pack for…", matchLevel: "none" },
+    });
+  });
+
   it("Performs no search, when there is no index", async () => {
     const index = null;
 

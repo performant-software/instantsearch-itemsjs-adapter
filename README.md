@@ -95,7 +95,7 @@ To see an implementation of this adapter go to [unplatform-io/clientside-instant
 | DynamicWidgets | ❌ | Cannot be imported from react-instanstsearch-dom (version 6.12.1) |
 | [GeoSearch](#geosearch) | ✔️ | Supports `insideBoundingBox` only |
 | [HierarchicalMenu](#%EF%B8%8F-hierarchicalmenu) | ✔️ |
-| Highlight | ❌ | Is not supported by ItemsJS |
+| [Highlight](#%EF%B8%8F-highlight) | ✔️ | Matches word prefixes; see below |
 | [Hits](#%EF%B8%8F-hits) | ✔️ |
 | [HitsPerPage](#%EF%B8%8F-hitsperpage) | ✔️ |
 | Index | ❌ | Is not supported by ItemsJS |
@@ -116,7 +116,7 @@ To see an implementation of this adapter go to [unplatform-io/clientside-instant
 | [ScrollTo](#%EF%B8%8F-scrollto) | ✔️ |
 | [SearchBox](#%EF%B8%8F-searchbox)| ✔️ |
 | [SearchState](#%EF%B8%8F-searchstate) | ✔️ |
-| Snippet | ❌ | Is not supported by ItemsJS |
+| [Snippet](#%EF%B8%8F-snippet) | ✔️ | Requires `attributesToSnippet`; see below |
 | [SortBy](#%EF%B8%8F-sortby) | ✔️ |
 | [StateResults](#%EF%B8%8F-stateresults) | ✔️ |
 | [Stats](#%EF%B8%8F-stats) | ✔️ |
@@ -182,6 +182,24 @@ The `HierarchicalMenu` widget allows a user to filter on a single value for an a
 | showParentLevel | ✔️ |
 | transformItems | ✔️ |
 | translations | ✔️ |
+
+### ✔️ Highlight
+[Highlight](https://www.algolia.com/doc/api-reference/widgets/highlight/react/)
+
+The `Highlight` widget displays a hit's attribute with the parts matching the query highlighted.
+
+ItemsJS doesn't report where the query matched, so the adapter finds the matches itself: a word in an attribute matches when it starts with a word of the query, ignoring case and diacritics. Stemmed matches from ItemsJS' full-text search, such as `running` for the query `run`, are only highlighted where they share the prefix.
+
+Every attribute except `objectID` and fields starting with `_` is highlighted, including arrays and nested objects. To limit this, set `attributesToHighlight` with the [Configure](#%EF%B8%8F-configure) widget, e.g. `<Configure attributesToHighlight={["title", "author.name"]} />`.
+
+| Parameter |  | Explanation |
+| --- | :---: | --- |
+| attribute | ✔️ |
+| tagName | ✔️ |
+| highlightedTagName | ✔️ |
+| nonHighlightedTagName | ✔️ |
+| separator | ✔️ |
+| classNames | ✔️ |
 
 ### ✔️ Hits
 [Hits](https://www.algolia.com/doc/api-reference/widgets/hits/react/)
@@ -414,6 +432,22 @@ The `SearchBox` widget allows a user to search text based.
 [SearchState](https://www.algolia.com/doc/api-reference/widgets/ui-state/react/)
 
 The `SearchState` widget allows a user to update their search parameters. When updated automaticly searched.
+
+### ✔️ Snippet
+[Snippet](https://www.algolia.com/doc/api-reference/widgets/snippet/react/)
+
+The `Snippet` widget displays an excerpt of a hit's attribute, with the query highlighted the same way as in [Highlight](#%EF%B8%8F-highlight).
+
+As with Algolia, no snippets are returned until you list the attributes in `attributesToSnippet`, optionally with a word count (10 by default): `<Configure attributesToSnippet={["description:20"]} />`. Longer values are cropped to that many words, centred on the first word matching the query, and `snippetEllipsisText` (`…` by default) marks where text was cut.
+
+| Parameter |  | Explanation |
+| --- | :---: | --- |
+| attribute | ✔️ |
+| tagName | ✔️ |
+| highlightedTagName | ✔️ |
+| nonHighlightedTagName | ✔️ |
+| separator | ✔️ |
+| classNames | ✔️ |
 
 ### ✔️ SortBy
 [Sortby](https://www.algolia.com/doc/api-reference/widgets/sort-by/js/)

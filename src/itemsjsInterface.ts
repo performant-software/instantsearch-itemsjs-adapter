@@ -26,6 +26,17 @@ export interface AdapterOptions {
   geoLocationField?: string;
 }
 
+export interface HighlightOptions {
+  // Defaults to every attribute, like Algolia with no searchableAttributes set
+  attributesToHighlight?: ReadonlyArray<string>;
+  highlightPreTag?: string;
+  highlightPostTag?: string;
+  // "attribute:wordCount", where wordCount defaults to 10
+  attributesToSnippet?: ReadonlyArray<string>;
+  // Defaults to "…"
+  snippetEllipsisText?: string;
+}
+
 export interface ItemsJsOptions {
   aggregations?: object;
   sortings?: object;

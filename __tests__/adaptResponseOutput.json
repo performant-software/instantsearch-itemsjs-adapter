@@ -31,7 +31,13 @@
 		}
 	},
 	"hits": [{
-		"_highlightResult": {},
+		"_highlightResult": {
+			"id": {"value": "1", "matchLevel": "none", "matchedWords": []},
+			"title": {"value": "bag", "matchLevel": "none", "matchedWords": []},
+			"price": {"value": "10.99", "matchLevel": "none", "matchedWords": []},
+			"category": {"value": "women&#39;s clothing", "matchLevel": "none", "matchedWords": []},
+			"rating": {"value": "1", "matchLevel": "none", "matchedWords": []}
+		},
 		"category": "women's clothing",
 		"id": 1,
 		"objectID": "1",
@@ -39,7 +45,13 @@
 		"rating": 1,
 		"title": "bag"
 	}, {
-		"_highlightResult": {},
+		"_highlightResult": {
+			"id": {"value": "2", "matchLevel": "none", "matchedWords": []},
+			"title": {"value": "sunglasses", "matchLevel": "none", "matchedWords": []},
+			"price": {"value": "5.99", "matchLevel": "none", "matchedWords": []},
+			"category": {"value": "men&#39;s clothing", "matchLevel": "none", "matchedWords": []},
+			"rating": {"value": "2", "matchLevel": "none", "matchedWords": []}
+		},
 		"category": "men's clothing",
 		"id": 2,
 		"objectID": "2",
@@ -47,7 +59,13 @@
 		"rating": 2,
 		"title": "sunglasses"
 	}, {
-		"_highlightResult": {},
+		"_highlightResult": {
+			"id": {"value": "3", "matchLevel": "none", "matchedWords": []},
+			"title": {"value": "jacket", "matchLevel": "none", "matchedWords": []},
+			"price": {"value": "56.99", "matchLevel": "none", "matchedWords": []},
+			"category": {"value": "men&#39;s clothing", "matchLevel": "none", "matchedWords": []},
+			"rating": {"value": "3", "matchLevel": "none", "matchedWords": []}
+		},
 		"category": "men's clothing",
 		"id": 3,
 		"objectID": "3",

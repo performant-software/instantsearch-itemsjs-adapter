@@ -4,6 +4,8 @@ import {
   adaptResponse,
   adaptFacetsStats,
   adaptFacetHits,
+  adaptHighlightResult,
+  adaptSnippetResult,
 } from "../src/adaptResponse";
 import { ItemsJsResponse } from "../src/itemsjsInterface";
 import outputs from "./adaptResponseOutput.json";
@@ -28,6 +30,167 @@ describe("adaptHit tests", () => {
     const adaptedItem = adaptHit(item);
     expect(adaptedItem.objectID).toBe(3);
     expect(adaptedItem._highlightResult).toMatchObject({});
+    expect(adaptedItem).not.toHaveProperty("_snippetResult");
+  });
+
+  it("adaptHit should add snippets when attributesToSnippet is set", () => {
+    const adaptedItem = adaptHit({ id: 3, title: "Bag" }, "bag", {
+      attributesToSnippet: ["title:2"],
+    });
+
+    expect(adaptedItem._snippetResult).toStrictEqual({
+      title: { value: "<mark>Bag</mark>", matchLevel: "full" },
+    });
+  });
+});
+
+describe("adaptHighlightResult tests", () => {
+  const tags = { highlightPreTag: "[", highlightPostTag: "]" };
+
+  it("highlights word prefixes and reports the match level", () => {
+    const item = { title: "New York Yankees", city: "Boston" };
+
+    expect(adaptHighlightResult(item, "new yan", tags)).toStrictEqual({
+      title: {
+        value: "[New] York [Yan]kees",
+        matchLevel: "full",
+        matchedWords: ["new", "yan"],
+        fullyHighlighted: false,
+      },
+      city: { value: "Boston", matchLevel: "none", matchedWords: [] },
+    });
+
+    expect(adaptHighlightResult(item, "york mets", tags).title).toStrictEqual({
+      value: "New [York] Yankees",
+      matchLevel: "partial",
+      matchedWords: ["york"],
+      fullyHighlighted: false,
+    });
+  });
+
+  it("marks values where every word is highlighted in full", () => {
+    expect(
+      adaptHighlightResult({ title: "Émile Zola" }, "emile zola", tags).title
+    ).toStrictEqual({
+      value: "[Émile] [Zola]",
+      matchLevel: "full",
+      matchedWords: ["emile", "zola"],
+      fullyHighlighted: true,
+    });
+  });
+
+  it("escapes HTML in values but not the highlight tags", () => {
+    expect(
+      adaptHighlightResult({ title: "<b>Tom & Jerry</b>" }, "tom", {
+        highlightPreTag: "<em>",
+        highlightPostTag: "</em>",
+      })
+    ).toMatchObject({
+      title: { value: "&lt;b&gt;<em>Tom</em> &amp; Jerry&lt;/b&gt;" },
+    });
+  });
+
+  it("highlights arrays and nested objects", () => {
+    const item = { tags: ["red", "green"], author: { name: "Greg" } };
+
+    expect(adaptHighlightResult(item, "gre", tags)).toMatchObject({
+      tags: [{ value: "red" }, { value: "[gre]en" }],
+      author: { name: { value: "[Gre]g" } },
+    });
+  });
+
+  it("skips objectID, internal fields and empty values", () => {
+    const item = {
+      objectID: "1",
+      _id: 1,
+      _geoloc: { lat: 1, lng: 2 },
+      title: "Bag",
+      description: null,
+    };
+
+    expect(Object.keys(adaptHighlightResult(item, "bag", tags))).toStrictEqual([
+      "title",
+    ]);
+  });
+
+  it("only highlights attributesToHighlight, including nested paths", () => {
+    const item = { title: "Bag", brand: "Bagworks", author: { name: "Bea" } };
+
+    expect(
+      adaptHighlightResult(item, "b", {
+        ...tags,
+        attributesToHighlight: ["title", "author.name", "missing"],
+      })
+    ).toMatchObject({
+      title: { value: "[B]ag" },
+      author: { name: { value: "[B]ea" } },
+    });
+
+    expect(
+      adaptHighlightResult(item, "b", { attributesToHighlight: [] })
+    ).toStrictEqual({});
+  });
+});
+
+describe("adaptSnippetResult tests", () => {
+  const tags = { highlightPreTag: "[", highlightPostTag: "]" };
+  const description =
+    "one two three four five six seven eight nine ten eleven twelve.";
+
+  it("crops around the first match and adds ellipses", () => {
+    expect(
+      adaptSnippetResult({ description }, "six", {
+        ...tags,
+        attributesToSnippet: ["description:5"],
+      })
+    ).toStrictEqual({
+      description: {
+        value: "…four five [six] seven eight…",
+        matchLevel: "full",
+      },
+    });
+  });
+
+  it("keeps the window inside the text at either end", () => {
+    const snippet = (query) =>
+      adaptSnippetResult({ description }, query, {
+        ...tags,
+        attributesToSnippet: ["description:3"],
+        snippetEllipsisText: "...",
+      });
+
+    expect(snippet("one")).toMatchObject({
+      description: { value: "[one] two three..." },
+    });
+    expect(snippet("twelve")).toMatchObject({
+      description: { value: "...ten eleven [twelve]." },
+    });
+    expect(snippet("missing")).toMatchObject({
+      description: { value: "one two three...", matchLevel: "none" },
+    });
+  });
+
+  it("returns short values whole, defaulting to 10 words", () => {
+    expect(
+      adaptSnippetResult({ title: "Tom & Jerry" }, "jer", {
+        ...tags,
+        attributesToSnippet: ["title", "missing"],
+      })
+    ).toStrictEqual({
+      title: { value: "Tom &amp; [Jer]ry", matchLevel: "full" },
+    });
+
+    expect(
+      adaptSnippetResult({ description }, "", { attributesToSnippet: ["*"] })
+    ).toMatchObject({
+      description: {
+        value: "one two three four five six seven eight nine ten…",
+      },
+    });
+  });
+
+  it("returns nothing without attributesToSnippet", () => {
+    expect(adaptSnippetResult({ description }, "six")).toStrictEqual({});
   });
 });
 

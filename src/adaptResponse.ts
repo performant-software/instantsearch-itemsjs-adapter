@@ -6,6 +6,7 @@ import {
   SearchResponse,
 } from "@algolia/client-search";
 import {
+  HighlightOptions,
   ItemsJsBucket,
   ItemsJsResponse,
   SearchForFacetValuesQuery,
@@ -14,14 +15,17 @@ import {
 export function adaptResponse(
   response: ItemsJsResponse,
   query: string,
-  processingTimeMS: number
+  processingTimeMS: number,
+  highlightOptions: HighlightOptions = {}
 ): SearchResponse {
   const totalNumberOfPages = Math.ceil(
     response.pagination.total / response.pagination.per_page
   );
 
   return {
-    hits: response.data.items.map(adaptHit),
+    hits: response.data.items.map((item) =>
+      adaptHit(item, query, highlightOptions)
+    ),
     page: response.pagination.page - 1,
     nbPages: totalNumberOfPages,
     hitsPerPage: response.pagination.per_page,
@@ -35,11 +39,19 @@ export function adaptResponse(
   };
 }
 
-export function adaptHit(item): Hit<object> {
+export function adaptHit(
+  item,
+  query = "",
+  highlightOptions: HighlightOptions = {}
+): Hit<object> {
   return {
     objectID: item.id,
     ...item,
-    _highlightResult: {}, // Highlighting not supported
+    _highlightResult: adaptHighlightResult(item, query, highlightOptions),
+    // Like Algolia, only include snippets when attributes are requested
+    ...(highlightOptions.attributesToSnippet?.length > 0 && {
+      _snippetResult: adaptSnippetResult(item, query, highlightOptions),
+    }),
   };
 }
 
@@ -78,11 +90,28 @@ export function adaptFacetsStats(
 const DEFAULT_MAX_FACET_HITS = 10;
 const DEFAULT_HIGHLIGHT_PRE_TAG = "<mark>";
 const DEFAULT_HIGHLIGHT_POST_TAG = "</mark>";
+const DEFAULT_SNIPPET_WORDS = 10;
+const DEFAULT_SNIPPET_ELLIPSIS_TEXT = "…";
 
 const WORD = /[\p{L}\p{N}]+/gu;
 
+const HTML_ENTITIES = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+// Like Algolia, escape the text around the highlight tags; InstantSearch unescapes it
+const escapeHtml = (text: string) =>
+  text.replace(/[&<>"']/g, (character) => HTML_ENTITIES[character]);
+
 const fold = (text: string) =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+const getQueryWords = (query: string) =>
+  query.normalize("NFC").match(WORD) || [];
 
 function getPrefixLength(word: string, prefix: string): number {
   let length = 0;
@@ -100,6 +129,268 @@ function getPrefixLength(word: string, prefix: string): number {
   return length;
 }
 
+// Wraps the start of every word in text that begins with one of the (folded)
+// query words, and reports which query words matched by index
+function highlightText(
+  text: string,
+  queryWords: string[],
+  highlightPreTag: string,
+  highlightPostTag: string,
+  escape = escapeHtml
+) {
+  if (queryWords.length === 0) {
+    // Nothing can match, so skip scanning the words
+    return {
+      value: escape(text),
+      matched: new Set<number>(),
+      fullyHighlighted: false,
+    };
+  }
+
+  let value = "";
+  let offset = 0;
+  let fullyHighlighted = true;
+  const matched = new Set<number>();
+
+  for (const { 0: word, index } of text.matchAll(WORD)) {
+    const foldedWord = fold(word);
+    let longest = "";
+
+    queryWords.forEach((queryWord, i) => {
+      if (foldedWord.startsWith(queryWord)) {
+        matched.add(i);
+
+        if (queryWord.length > longest.length) {
+          longest = queryWord;
+        }
+      }
+    });
+
+    if (!longest) {
+      fullyHighlighted = false;
+      continue;
+    }
+
+    const length = getPrefixLength(word, longest);
+
+    if (length < word.length) {
+      fullyHighlighted = false;
+    }
+
+    value +=
+      escape(text.slice(offset, index)) +
+      highlightPreTag +
+      escape(word.slice(0, length)) +
+      highlightPostTag;
+    offset = index + length;
+  }
+
+  return {
+    value: value + escape(text.slice(offset)),
+    matched,
+    fullyHighlighted: fullyHighlighted && matched.size > 0,
+  };
+}
+
+// Calls adaptText on every primitive value of the requested attributes, keeping
+// the shape of arrays and nested objects. Attributes may be written as
+// "name:count", e.g. "description:20" in attributesToSnippet.
+function adaptAttributes(
+  item: object,
+  attributes: ReadonlyArray<string>,
+  adaptText: (text: string, count?: number) => object
+): Record<string, unknown> {
+  const adaptValue = (value, count?: number) => {
+    if (Array.isArray(value)) {
+      return value.map((element) => adaptValue(element, count));
+    }
+
+    if (value !== null && typeof value === "object") {
+      return adaptObject(value, count, () => true);
+    }
+
+    if (!["string", "number", "boolean"].includes(typeof value)) {
+      return undefined;
+    }
+
+    return adaptText(String(value), count);
+  };
+
+  const adaptObject = (
+    object: object,
+    count: number,
+    includeKey: (key) => boolean
+  ) => {
+    const result = {};
+
+    Object.keys(object).forEach((key) => {
+      const adapted = includeKey(key)
+        ? adaptValue(object[key], count)
+        : undefined;
+
+      if (adapted !== undefined) {
+        result[key] = adapted;
+      }
+    });
+
+    return result;
+  };
+
+  const parsed = attributes.map((attribute) => {
+    const [name, count] = attribute.split(":");
+    return { name, count: count === undefined ? undefined : Number(count) };
+  });
+
+  const wildcard = parsed.find(({ name }) => name === "*");
+
+  if (wildcard) {
+    // Skip objectID and internal fields such as itemsjs' _id and _geoloc
+    return adaptObject(
+      item,
+      wildcard.count,
+      (key) => key !== "objectID" && !key.startsWith("_")
+    );
+  }
+
+  const result = {};
+
+  parsed.forEach(({ name, count }) => {
+    const path = name.split(".");
+    const adapted = adaptValue(
+      path.reduce(
+        (value, key) => (value == null ? undefined : value[key]),
+        item
+      ),
+      count
+    );
+
+    if (adapted === undefined) {
+      return;
+    }
+
+    let target = result;
+    path.slice(0, -1).forEach((key) => {
+      target[key] = target[key] || {};
+      target = target[key];
+    });
+    target[path[path.length - 1]] = adapted;
+  });
+
+  return result;
+}
+
+const getMatchLevel = (matched: Set<number>, queryWords: string[]) => {
+  if (matched.size === 0) {
+    return "none";
+  }
+
+  return matched.size === queryWords.length ? "full" : "partial";
+};
+
+export function adaptHighlightResult(
+  item: object,
+  query = "",
+  {
+    attributesToHighlight = ["*"],
+    highlightPostTag = DEFAULT_HIGHLIGHT_POST_TAG,
+    highlightPreTag = DEFAULT_HIGHLIGHT_PRE_TAG,
+  }: HighlightOptions = {}
+): Record<string, unknown> {
+  const queryWords = getQueryWords(query);
+  const foldedQueryWords = queryWords.map(fold);
+
+  return adaptAttributes(item, attributesToHighlight, (text) => {
+    const { value, matched, fullyHighlighted } = highlightText(
+      text,
+      foldedQueryWords,
+      highlightPreTag,
+      highlightPostTag
+    );
+
+    if (matched.size === 0) {
+      return { value, matchLevel: "none", matchedWords: [] };
+    }
+
+    return {
+      value,
+      matchLevel: getMatchLevel(matched, queryWords),
+      matchedWords: [...matched]
+        .sort((a, b) => a - b)
+        .map((i) => queryWords[i]),
+      fullyHighlighted,
+    };
+  });
+}
+
+// Crops text to wordCount words, centred on the first word matching the query
+function cropText(text: string, queryWords: string[], wordCount: number) {
+  const words = [...text.matchAll(WORD)];
+
+  if (words.length <= wordCount) {
+    return { text, croppedStart: false, croppedEnd: false };
+  }
+
+  const firstMatch = words.findIndex(({ 0: word }) => {
+    const foldedWord = fold(word);
+    return queryWords.some((queryWord) => foldedWord.startsWith(queryWord));
+  });
+
+  const start =
+    firstMatch === -1
+      ? 0
+      : Math.max(
+          0,
+          Math.min(
+            firstMatch - Math.floor((wordCount - 1) / 2),
+            words.length - wordCount
+          )
+        );
+  const end = start + wordCount;
+  const lastWord = words[end - 1];
+
+  return {
+    text: text.slice(
+      start === 0 ? 0 : words[start].index,
+      end === words.length ? text.length : lastWord.index + lastWord[0].length
+    ),
+    croppedStart: start > 0,
+    croppedEnd: end < words.length,
+  };
+}
+
+export function adaptSnippetResult(
+  item: object,
+  query = "",
+  {
+    attributesToSnippet = [],
+    highlightPostTag = DEFAULT_HIGHLIGHT_POST_TAG,
+    highlightPreTag = DEFAULT_HIGHLIGHT_PRE_TAG,
+    snippetEllipsisText = DEFAULT_SNIPPET_ELLIPSIS_TEXT,
+  }: HighlightOptions = {}
+): Record<string, unknown> {
+  const queryWords = getQueryWords(query).map(fold);
+
+  return adaptAttributes(item, attributesToSnippet, (text, count) => {
+    const wordCount =
+      Number.isInteger(count) && count > 0 ? count : DEFAULT_SNIPPET_WORDS;
+    const cropped = cropText(text, queryWords, wordCount);
+    const { value, matched } = highlightText(
+      cropped.text,
+      queryWords,
+      highlightPreTag,
+      highlightPostTag
+    );
+
+    return {
+      value:
+        (cropped.croppedStart ? snippetEllipsisText : "") +
+        value +
+        (cropped.croppedEnd ? snippetEllipsisText : ""),
+      matchLevel: getMatchLevel(matched, queryWords),
+    };
+  });
+}
+
 export function adaptFacetHits(
   buckets: ItemsJsBucket[],
   params: Partial<SearchForFacetValuesQuery["params"]> = {}
@@ -111,39 +402,18 @@ export function adaptFacetHits(
     maxFacetHits = DEFAULT_MAX_FACET_HITS,
   } = params;
 
-  const queryWords = fold(facetQuery).match(WORD) || [];
+  const queryWords = getQueryWords(facetQuery).map(fold);
 
   const highlight = (value: string) => {
-    let highlighted = "";
-    let offset = 0;
-    const matched = new Set<string>();
+    const { value: highlighted, matched } = highlightText(
+      value,
+      queryWords,
+      highlightPreTag,
+      highlightPostTag,
+      (text) => text // Facet values have always been returned unescaped
+    );
 
-    for (const { 0: word, index } of value.matchAll(WORD)) {
-      const foldedWord = fold(word);
-      const prefixes = queryWords.filter((queryWord) =>
-        foldedWord.startsWith(queryWord)
-      );
-
-      if (prefixes.length === 0) {
-        continue;
-      }
-
-      prefixes.forEach((prefix) => matched.add(prefix));
-
-      const longest = prefixes.reduce((a, b) => (b.length > a.length ? b : a));
-      const length = getPrefixLength(word, longest);
-
-      highlighted +=
-        value.slice(offset, index) +
-        highlightPreTag +
-        word.slice(0, length) +
-        highlightPostTag;
-      offset = index + length;
-    }
-
-    return queryWords.every((queryWord) => matched.has(queryWord))
-      ? highlighted + value.slice(offset)
-      : null;
+    return matched.size === queryWords.length ? highlighted : null;
   };
 
   const facetHits = [];

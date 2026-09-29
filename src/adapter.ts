@@ -60,7 +60,12 @@ export function performSearch(
         itemsJsRes.data.aggregations = filteredAggregations;
       }
 
-      return adaptResponse(itemsJsRes, request.params.query, processingTimeMS);
+      return adaptResponse(
+        itemsJsRes,
+        request.params.query,
+        processingTimeMS,
+        request.params
+      );
     });
 
     return Promise.resolve({ results: responses });
