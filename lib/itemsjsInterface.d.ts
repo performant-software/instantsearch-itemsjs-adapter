@@ -11,6 +11,13 @@ interface SearchForFacetValuesQuery {
 interface AdapterOptions {
     geoLocationField?: string;
 }
+interface HighlightOptions {
+    attributesToHighlight?: ReadonlyArray<string>;
+    highlightPreTag?: string;
+    highlightPostTag?: string;
+    attributesToSnippet?: ReadonlyArray<string>;
+    snippetEllipsisText?: string;
+}
 interface ItemsJsOptions {
     aggregations?: object;
     sortings?: object;
@@ -54,4 +61,4 @@ interface ItemsJsBucket {
     selected: boolean;
 }
 
-export { AdapterOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery };
+export { AdapterOptions, HighlightOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery };
