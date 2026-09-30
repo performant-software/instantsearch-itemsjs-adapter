@@ -28,7 +28,7 @@
     "globals": "^17.12.0",
     "prettier": "2.4.1",
     "tsup": "^8.5.1",
-    "typescript": "^4.9.5",
+    "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"
   },
@@ -36,9 +36,10 @@
     "test": "vitest run",
     "eslint": "eslint .",
     "eslint:fix": "npm run eslint -- --fix",
-    "build": "tsup --dts",
+    "build": "tsup",
     "format": "prettier --write \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\"",
-    "format:check": "prettier --check \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\""
+    "format:check": "prettier --check \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\"",
+    "typecheck": "tsc"
   },
   "keywords": [
     "itemsjs",

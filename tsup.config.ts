@@ -1,12 +1,15 @@
 import { defineConfig } from "tsup";
 
-// https://github.com/egoist/tsup/blob/main/src/options.ts
+// https://tsup.egoist.dev/
 export default defineConfig({
-  entry: ["src/*"],
+  // only "." is exported, so build just the public entry point
+  entry: ["src/adapter.ts"],
   format: ["esm"],
-  target: "node24",
-  minify: true,
-  bundle: true,
+  // runs in the browser with InstantSearch; matches tsconfig's target
+  target: "es2022",
+  dts: true,
+  // leave minification to the consumer's bundler
+  sourcemap: true,
   outDir: "lib",
   clean: true,
 });
