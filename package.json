@@ -22,22 +22,23 @@
     "itemsjs": "^2.4.4"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-prettier": "^4.0.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
     "prettier": "2.4.1",
     "tsup": "^8.5.1",
-    "typescript": "^4.5.2",
+    "typescript": "^4.9.5",
+    "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3"
   },
   "scripts": {
     "test": "vitest run",
-    "eslint": "npx eslint . --ext .js,.jsx,.ts,.tsx",
+    "eslint": "eslint .",
     "eslint:fix": "npm run eslint -- --fix",
-    "build": "tsup --dts"
+    "build": "tsup --dts",
+    "format": "prettier --write \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\"",
+    "format:check": "prettier --check \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\""
   },
   "keywords": [
     "itemsjs",
