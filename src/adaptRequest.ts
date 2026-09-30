@@ -93,10 +93,10 @@ export function filterRegex(itemsJsFacets, facet) {
 export function parseRange(range) {
   /*
    * Group 1: Find chars, one or more, except values: "<, =, !, >".
-   * Group 2: Find operator
-   * Group 3: Find digits, one or more.
+   * Group 2: Find operator. Two-char operators first so "<=" isn't read as "<".
+   * Group 3: The rest of the string, e.g. "-500", "1.5" or "1e-7".
    */
-  return range.match(new RegExp(/([^<=!>]+)(<|<=|=|!=|>|>=)(\d+)/));
+  return range.match(new RegExp(/^([^<=!>]+)(<=|>=|!=|<|>|=)(.+)$/));
 }
 
 export function adaptNumericFilters(ranges) {
@@ -104,7 +104,16 @@ export function adaptNumericFilters(ranges) {
 
   ranges.map((range) => {
     // ['price<=10', 'price', '<=', '10']
-    const [, field, operator, value] = parseRange(range);
+    const match = parseRange(range);
+    if (!match) {
+      throw Error(`Invalid numeric filter: ${range}`);
+    }
+
+    const [, field, operator, rawValue] = match;
+    const value = Number(rawValue);
+    if (rawValue.trim() === "" || Number.isNaN(value)) {
+      throw Error(`Invalid numeric filter value: ${range}`);
+    }
 
     switch (operator) {
       case "<":

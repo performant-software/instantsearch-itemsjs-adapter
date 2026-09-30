@@ -131,6 +131,37 @@ describe("adaptNumericFilters tests", () => {
     );
     expect(res4).toStrictEqual([{ price: 15, in_stock: 0 }]);
   });
+
+  it("Test negative and decimal values", () => {
+    const years = [
+      { year: -2500 },
+      { year: -500 },
+      { year: 1.5 },
+      { year: 1.75 },
+    ];
+
+    const bce = adaptNumericFilters(["year>=-1000", "year<=0"]);
+    expect(years.filter((item) => bce.every((f) => f(item)))).toStrictEqual([
+      { year: -500 },
+    ]);
+
+    const decimal = adaptNumericFilters(["year>=1.5", "year<1.7"]);
+    expect(
+      years.filter((item) => decimal.every((f) => f(item)))
+    ).toStrictEqual([{ year: 1.5 }]);
+  });
+
+  it("Throws on an invalid filter", () => {
+    expect(() => adaptNumericFilters(["year>=abc"])).toThrow(
+      "Invalid numeric filter value: year>=abc"
+    );
+    expect(() => adaptNumericFilters(["year>= "])).toThrow(
+      "Invalid numeric filter value: year>= "
+    );
+    expect(() => adaptNumericFilters(["year"])).toThrow(
+      "Invalid numeric filter: year"
+    );
+  });
 });
 
 describe("regexInput tests group in three", () => {
@@ -180,6 +211,19 @@ describe("regexInput tests group in three", () => {
     expect(field6).toStrictEqual("price");
     expect(operator6).toStrictEqual("<=");
     expect(value6).toStrictEqual("50");
+  });
+
+  it.each([
+    ["year>=-500", ">=", "-500"],
+    ["year<=1.5", "<=", "1.5"],
+    ["year<=-1.5", "<=", "-1.5"],
+    ["year<=1e-7", "<=", "1e-7"],
+  ])("parses %s", (range, expectedOperator, expectedValue) => {
+    const [, field, operator, value] = parseRange(range);
+
+    expect(field).toStrictEqual("year");
+    expect(operator).toStrictEqual(expectedOperator);
+    expect(value).toStrictEqual(expectedValue);
   });
 });
 
