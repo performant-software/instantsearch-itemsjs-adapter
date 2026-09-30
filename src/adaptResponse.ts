@@ -375,7 +375,10 @@ export function adaptHighlightResult(
   const adaptValue = (value, valueAttributes: string[][]) => {
     if (Array.isArray(value)) {
       return value.map((element, i) =>
-        adaptValue(element, getChildAttributes(valueAttributes, String(i), true))
+        adaptValue(
+          element,
+          getChildAttributes(valueAttributes, String(i), true)
+        )
       );
     }
 
@@ -405,7 +408,10 @@ export function adaptHighlightResult(
 
     Object.keys(object).forEach((key) => {
       const adapted = includeKey(key)
-        ? adaptValue(object[key], getChildAttributes(objectAttributes, key, false))
+        ? adaptValue(
+            object[key],
+            getChildAttributes(objectAttributes, key, false)
+          )
         : undefined;
 
       if (adapted !== undefined) {
