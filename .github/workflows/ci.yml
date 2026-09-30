@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+  # Also run by release-branch.yml before it publishes a build.
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs when a PR gets new commits. Runs called from the
+# release workflow get their own group so they are never cancelled.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: npm
+      - run: npm ci
+      - run: npm run eslint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+      # Packs the build, so it has to run after it.
+      - run: npm run lint:package
