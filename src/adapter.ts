@@ -1,17 +1,15 @@
 import itemsjs from "itemsjs";
 import { adaptFacetHits, adaptResponse } from "./adaptResponse";
 import { adaptRequest } from "./adaptRequest";
-import {
-  MultipleQueriesResponse,
-  MultipleQueriesQuery,
-  SearchForFacetValuesResponse,
-} from "@algolia/client-search";
+import { SearchForFacetValuesResponse } from "@algolia/client-search";
 import {
   AdapterOptions,
   ItemsJsBucket,
   ItemsJsOptions,
   SearchClient,
   SearchForFacetValuesQuery,
+  SearchRequest,
+  SearchResponses,
 } from "./itemsjsInterface";
 
 let index;
@@ -21,7 +19,7 @@ export function getSearchClient(
   options?: AdapterOptions
 ): SearchClient {
   return {
-    search: (queries: MultipleQueriesQuery[]) =>
+    search: (queries: SearchRequest[]) =>
       performSearch(queries, index || newIndex, options),
     searchForFacetValues: (queries: SearchForFacetValuesQuery[]) =>
       searchForFacetValues(queries, index || newIndex, options),
@@ -34,10 +32,10 @@ export function createIndex(data: object, options: ItemsJsOptions): any {
 }
 
 export function performSearch(
-  requests: MultipleQueriesQuery[],
+  requests: SearchRequest[],
   index: any,
   options?: AdapterOptions
-): Readonly<Promise<MultipleQueriesResponse<object>>> {
+): Readonly<Promise<SearchResponses>> {
   if (index) {
     let processingTimeMS = 0;
     const responses = requests.map((request) => {

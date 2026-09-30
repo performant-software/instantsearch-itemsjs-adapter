@@ -1,11 +1,14 @@
 //Instantsearch request to itemsjs request
-import { MultipleQueriesQuery } from "@algolia/client-search";
-import { AdapterOptions, ItemsJsRequest } from "./itemsjsInterface";
+import {
+  AdapterOptions,
+  ItemsJsRequest,
+  SearchRequest,
+} from "./itemsjsInterface";
 
 const DEFAULT_GEO_LOCATION_FIELD = "_geoloc";
 
 export function adaptRequest(
-  request: MultipleQueriesQuery,
+  request: SearchRequest,
   options: AdapterOptions = {}
 ): ItemsJsRequest {
   const numericFilters = <string[]>request.params.numericFilters;

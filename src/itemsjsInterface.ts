@@ -1,24 +1,33 @@
 import {
   Hit,
-  MultipleQueriesQuery,
-  MultipleQueriesResponse,
-  SearchForFacetValuesQueryParams,
   SearchForFacetValuesResponse,
-  SearchOptions,
+  SearchParamsObject,
+  SearchResponse,
 } from "@algolia/client-search";
 
 export interface SearchClient {
-  search: (
-    queries: MultipleQueriesQuery[]
-  ) => Readonly<Promise<MultipleQueriesResponse<object>>>;
+  search: (queries: SearchRequest[]) => Readonly<Promise<SearchResponses>>;
   searchForFacetValues: (
     queries: SearchForFacetValuesQuery[]
   ) => Readonly<Promise<SearchForFacetValuesResponse[]>>;
 }
 
+export interface SearchResponses {
+  results: Array<SearchResponse<object>>;
+}
+
+export interface SearchRequest {
+  indexName: string;
+  params: SearchParamsObject;
+}
+
 export interface SearchForFacetValuesQuery {
   indexName: string;
-  params: SearchForFacetValuesQueryParams & SearchOptions;
+  params: SearchParamsObject & {
+    facetName: string;
+    facetQuery?: string;
+    maxFacetHits?: number;
+  };
 }
 
 export interface AdapterOptions {

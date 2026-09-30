@@ -7,10 +7,10 @@ import {
   getSearchClient,
 } from "../src/adapter";
 import {
-  MultipleQueriesQuery,
-  MultipleQueriesResponse,
-} from "@algolia/client-search";
-import { ItemsJsOptions } from "../src/itemsjsInterface";
+  ItemsJsOptions,
+  SearchRequest,
+  SearchResponses,
+} from "../src/itemsjsInterface";
 
 const per_page = 4;
 const query = "";
@@ -29,7 +29,7 @@ const options: ItemsJsOptions = {
   },
 };
 
-const requests: MultipleQueriesQuery[] = [
+const requests: SearchRequest[] = [
   {
     indexName: "instant_search",
     params: {
@@ -60,7 +60,7 @@ const requests: MultipleQueriesQuery[] = [
 
 describe("getSearchClient", () => {
   it("getSearchClient", () => {
-    const queries: MultipleQueriesQuery[] = [
+    const queries: SearchRequest[] = [
       {
         indexName: "instant_search",
         params: {
@@ -125,8 +125,10 @@ describe("performSearch", () => {
   it("Performs a search", async () => {
     const index = createIndex(products, options);
 
-    const response: Readonly<MultipleQueriesResponse<object>> =
-      await performSearch(requests, index);
+    const response: Readonly<SearchResponses> = await performSearch(
+      requests,
+      index
+    );
 
     expect(response.results[0].hits.length).toBe(per_page || products.length);
     expect(response.results[0].page).toBe(page - 1);
@@ -178,21 +180,20 @@ describe("performSearch", () => {
   it("Highlights the query in hits with the requested tags", async () => {
     const index = createIndex(products, options);
 
-    const response: Readonly<MultipleQueriesResponse<object>> =
-      await performSearch(
-        [
-          {
-            ...requests[0],
-            params: {
-              ...requests[0].params,
-              query: "backpack",
-              attributesToHighlight: ["title"],
-              attributesToSnippet: ["description:4"],
-            },
+    const response: Readonly<SearchResponses> = await performSearch(
+      [
+        {
+          ...requests[0],
+          params: {
+            ...requests[0].params,
+            query: "backpack",
+            attributesToHighlight: ["title"],
+            attributesToSnippet: ["description:4"],
           },
-        ],
-        index
-      );
+        },
+      ],
+      index
+    );
 
     expect(response.results[0].hits[0]._highlightResult).toStrictEqual({
       title: {
@@ -211,8 +212,10 @@ describe("performSearch", () => {
   it("Performs no search, when there is no index", async () => {
     const index = null;
 
-    const response: Readonly<MultipleQueriesResponse<object>> =
-      await performSearch(requests, index);
+    const response: Readonly<SearchResponses> = await performSearch(
+      requests,
+      index
+    );
 
     expect(response).toBeNull();
   });

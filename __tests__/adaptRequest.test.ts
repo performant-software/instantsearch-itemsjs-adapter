@@ -1,4 +1,4 @@
-import { MultipleQueriesQuery } from "@algolia/client-search";
+import { SearchRequest } from "../src/itemsjsInterface";
 import {
   adaptPage,
   adaptFilters,
@@ -42,7 +42,7 @@ describe("adaptPage tests", () => {
 
 describe("adaptRequest tests", () => {
   it("adaptRequest should convert (max parameters) request to ItemsJs request", () => {
-    const instantsearchRequest: MultipleQueriesQuery = {
+    const instantsearchRequest: SearchRequest = {
       indexName: "products",
       params: {
         query: "a",
@@ -67,7 +67,7 @@ describe("adaptRequest tests", () => {
   });
 
   it("adaptRequest should convert (min parameters) request to ItemsJs request ", () => {
-    const instantsearchRequest: MultipleQueriesQuery = {
+    const instantsearchRequest: SearchRequest = {
       indexName: "products",
       params: {
         query: "a",
