@@ -35,7 +35,7 @@
 			"id": {"value": "1", "matchLevel": "none", "matchedWords": []},
 			"title": {"value": "bag", "matchLevel": "none", "matchedWords": []},
 			"price": {"value": "10.99", "matchLevel": "none", "matchedWords": []},
-			"category": {"value": "women&#39;s clothing", "matchLevel": "none", "matchedWords": []},
+			"category": {"value": "women's clothing", "matchLevel": "none", "matchedWords": []},
 			"rating": {"value": "1", "matchLevel": "none", "matchedWords": []}
 		},
 		"category": "women's clothing",
@@ -49,7 +49,7 @@
 			"id": {"value": "2", "matchLevel": "none", "matchedWords": []},
 			"title": {"value": "sunglasses", "matchLevel": "none", "matchedWords": []},
 			"price": {"value": "5.99", "matchLevel": "none", "matchedWords": []},
-			"category": {"value": "men&#39;s clothing", "matchLevel": "none", "matchedWords": []},
+			"category": {"value": "men's clothing", "matchLevel": "none", "matchedWords": []},
 			"rating": {"value": "2", "matchLevel": "none", "matchedWords": []}
 		},
 		"category": "men's clothing",
@@ -63,7 +63,7 @@
 			"id": {"value": "3", "matchLevel": "none", "matchedWords": []},
 			"title": {"value": "jacket", "matchLevel": "none", "matchedWords": []},
 			"price": {"value": "56.99", "matchLevel": "none", "matchedWords": []},
-			"category": {"value": "men&#39;s clothing", "matchLevel": "none", "matchedWords": []},
+			"category": {"value": "men's clothing", "matchLevel": "none", "matchedWords": []},
 			"rating": {"value": "3", "matchLevel": "none", "matchedWords": []}
 		},
 		"category": "men's clothing",

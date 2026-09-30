@@ -80,14 +80,14 @@ describe("adaptHighlightResult tests", () => {
     });
   });
 
-  it("escapes HTML in values but not the highlight tags", () => {
+  it("leaves HTML in values unescaped, like Algolia", () => {
     expect(
       adaptHighlightResult({ title: "<b>Tom & Jerry</b>" }, "tom", {
         highlightPreTag: "<em>",
         highlightPostTag: "</em>",
       })
     ).toMatchObject({
-      title: { value: "&lt;b&gt;<em>Tom</em> &amp; Jerry&lt;/b&gt;" },
+      title: { value: "<b><em>Tom</em> & Jerry</b>" },
     });
   });
 
@@ -154,12 +154,12 @@ describe("adaptHighlightResult tests", () => {
 
     expect(adaptHighlightResult(item, "bag", tags, ["title"])).toStrictEqual({
       title: {
-        value: "[Bag] &amp; co",
+        value: "[Bag] & co",
         matchLevel: "full",
         matchedWords: ["bag"],
         fullyHighlighted: false,
       },
-      brand: { value: "Bag &amp; co", matchLevel: "none", matchedWords: [] },
+      brand: { value: "Bag & co", matchLevel: "none", matchedWords: [] },
     });
 
     expect(
@@ -168,8 +168,8 @@ describe("adaptHighlightResult tests", () => {
         attributesToHighlight: ["brand"],
       }, ["title"])
     ).toMatchObject({
-      title: { value: "Bag &amp; co", matchLevel: "none" },
-      brand: { value: "[Bag] &amp; co" },
+      title: { value: "Bag & co", matchLevel: "none" },
+      brand: { value: "[Bag] & co" },
     });
   });
 
@@ -238,7 +238,7 @@ describe("adaptSnippetResult tests", () => {
         attributesToSnippet: ["title", "missing"],
       })
     ).toStrictEqual({
-      title: { value: "Tom &amp; [Jer]ry", matchLevel: "full" },
+      title: { value: "Tom & [Jer]ry", matchLevel: "full" },
     });
 
     expect(

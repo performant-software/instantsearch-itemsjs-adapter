@@ -102,18 +102,6 @@ const DEFAULT_SNIPPET_ELLIPSIS_TEXT = "…";
 
 const WORD = /[\p{L}\p{N}]+/gu;
 
-const HTML_ENTITIES = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
-// Like Algolia, escape the text around the highlight tags; InstantSearch unescapes it
-const escapeHtml = (text: string) =>
-  text.replace(/[&<>"']/g, (character) => HTML_ENTITIES[character]);
-
 const fold = (text: string) =>
   text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
@@ -142,13 +130,12 @@ function highlightText(
   text: string,
   queryWords: string[],
   highlightPreTag: string,
-  highlightPostTag: string,
-  escape = escapeHtml
+  highlightPostTag: string
 ) {
   if (queryWords.length === 0) {
     // Nothing can match, so skip scanning the words
     return {
-      value: escape(text),
+      value: text,
       matched: new Set<number>(),
       fullyHighlighted: false,
     };
@@ -185,15 +172,15 @@ function highlightText(
     }
 
     value +=
-      escape(text.slice(offset, index)) +
+      text.slice(offset, index) +
       highlightPreTag +
-      escape(word.slice(0, length)) +
+      word.slice(0, length) +
       highlightPostTag;
     offset = index + length;
   }
 
   return {
-    value: value + escape(text.slice(offset)),
+    value: value + text.slice(offset),
     matched,
     fullyHighlighted: fullyHighlighted && matched.size > 0,
   };
@@ -396,7 +383,7 @@ export function adaptHighlightResult(
       return highlight(text);
     }
 
-    return { value: escapeHtml(text), matchLevel: "none", matchedWords: [] };
+    return { value: text, matchLevel: "none", matchedWords: [] };
   };
 
   const adaptObject = (
@@ -517,8 +504,7 @@ export function adaptFacetHits(
       value,
       queryWords,
       highlightPreTag,
-      highlightPostTag,
-      (text) => text // Facet values have always been returned unescaped
+      highlightPostTag
     );
 
     return matched.size === queryWords.length ? highlighted : null;
