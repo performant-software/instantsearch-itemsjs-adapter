@@ -1,5 +1,5 @@
 import { SearchForFacetValuesResponse } from '@algolia/client-search';
-import { AdapterOptions, SearchClient, ItemsJsOptions, SearchRequest, SearchResponses, SearchForFacetValuesQuery, ItemsJsBucket } from './itemsjsInterface.js';
+import { ItemsJsOptions, AdapterOptions, SearchClient, SearchRequest, SearchResponses, SearchForFacetValuesQuery, ItemsJsBucket } from './itemsjsInterface.js';
 
 declare function getSearchClient(newIndex?: any, options?: AdapterOptions): SearchClient;
 declare function createIndex(data: object, options: ItemsJsOptions): any;

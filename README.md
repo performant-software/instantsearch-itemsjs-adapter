@@ -542,11 +542,11 @@ aggregations: {
 ```
 
 ## Contribute
-Help to this project is appreciated. If you want to help please use Jest and ESlint mentioned below, before creating a pull request.
+Help to this project is appreciated. If you want to help please use Vitest and ESlint mentioned below, before creating a pull request.
 
-### [Jest](https://jestjs.io/)
+### [Vitest](https://vitest.dev/)
 
-To check functionalities run Jest tests, and if you make a new functionality also write some tests for this code.
+To check functionalities run the Vitest tests, and if you make a new functionality also write some tests for this code.
 
 ```bash
 

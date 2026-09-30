@@ -1,4 +1,4 @@
-import { SearchForFacetValuesResponse, SearchResponse, SearchParamsObject, Hit } from '@algolia/client-search';
+import { SearchParamsObject, Hit, SearchResponse, SearchForFacetValuesResponse } from '@algolia/client-search';
 
 interface SearchClient {
     search: (queries: SearchRequest[]) => Readonly<Promise<SearchResponses>>;
@@ -72,4 +72,4 @@ interface ItemsJsBucket {
     selected: boolean;
 }
 
-export { AdapterOptions, HighlightOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery, SearchRequest, SearchResponses };
+export type { AdapterOptions, HighlightOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery, SearchRequest, SearchResponses };

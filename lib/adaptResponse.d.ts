@@ -1,5 +1,5 @@
-import { SearchResponse, Hit, SearchForFacetValuesResponse } from '@algolia/client-search';
-import { ItemsJsResponse, HighlightOptions, ItemsJsBucket, SearchForFacetValuesQuery } from './itemsjsInterface.js';
+import { SearchForFacetValuesResponse, Hit, SearchResponse } from '@algolia/client-search';
+import { ItemsJsBucket, SearchForFacetValuesQuery, HighlightOptions, ItemsJsResponse } from './itemsjsInterface.js';
 
 declare function adaptResponse(response: ItemsJsResponse, query: string, processingTimeMS: number, highlightOptions?: HighlightOptions): SearchResponse;
 declare function adaptHit(item: any, query?: string, highlightOptions?: HighlightOptions): Hit<object>;
