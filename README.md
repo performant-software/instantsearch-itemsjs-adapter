@@ -185,7 +185,7 @@ The `Highlight` widget displays a hit's attribute with the parts matching the qu
 
 ItemsJS doesn't report where the query matched, so the adapter finds the matches itself: a word in an attribute matches when it starts with a word of the query, ignoring case and diacritics. Stemmed matches from ItemsJS' full-text search, such as `running` for the query `run`, are only highlighted where they share the prefix.
 
-Every attribute except `objectID` and fields starting with `_` is highlighted, including arrays and nested objects. To limit this, set `attributesToHighlight` with the [Configure](#%EF%B8%8F-configure) widget, e.g. `<Configure attributesToHighlight={["title", "author.name"]} />`.
+Every attribute except `objectID` and fields starting with `_` is returned, including arrays and nested objects, so any of them can be displayed with `Highlight`. Like Algolia and Typesense, the query is only matched in the searchable attributes: the `searchableFields` passed to `createIndex` (or every attribute for an index made some other way). To match other attributes, set `attributesToHighlight` with the [Configure](#%EF%B8%8F-configure) widget, e.g. `<Configure attributesToHighlight={["title", "author.name"]} />`. Paths may skip array indexes, so `authors.name` covers every author. The attributes that aren't matched are still returned, unhighlighted.
 
 | Parameter |  | Explanation |
 | --- | :---: | --- |
