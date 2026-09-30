@@ -114,7 +114,7 @@ describe("adaptHighlightResult tests", () => {
     ]);
   });
 
-  it("only highlights attributesToHighlight, including nested paths", () => {
+  it("only matches attributesToHighlight, including nested paths", () => {
     const item = { title: "Bag", brand: "Bagworks", author: { name: "Bea" } };
 
     expect(
@@ -122,14 +122,74 @@ describe("adaptHighlightResult tests", () => {
         ...tags,
         attributesToHighlight: ["title", "author.name", "missing"],
       })
-    ).toMatchObject({
-      title: { value: "[B]ag" },
-      author: { name: { value: "[B]ea" } },
+    ).toStrictEqual({
+      title: {
+        value: "[B]ag",
+        matchLevel: "full",
+        matchedWords: ["b"],
+        fullyHighlighted: false,
+      },
+      brand: { value: "Bagworks", matchLevel: "none", matchedWords: [] },
+      author: {
+        name: {
+          value: "[B]ea",
+          matchLevel: "full",
+          matchedWords: ["b"],
+          fullyHighlighted: false,
+        },
+      },
     });
 
     expect(
       adaptHighlightResult(item, "b", { attributesToHighlight: [] })
-    ).toStrictEqual({});
+    ).toStrictEqual({
+      title: { value: "Bag", matchLevel: "none", matchedWords: [] },
+      brand: { value: "Bagworks", matchLevel: "none", matchedWords: [] },
+      author: { name: { value: "Bea", matchLevel: "none", matchedWords: [] } },
+    });
+  });
+
+  it("matches the searchable fields by default", () => {
+    const item = { title: "Bag & co", brand: "Bag & co" };
+
+    expect(adaptHighlightResult(item, "bag", tags, ["title"])).toStrictEqual({
+      title: {
+        value: "[Bag] &amp; co",
+        matchLevel: "full",
+        matchedWords: ["bag"],
+        fullyHighlighted: false,
+      },
+      brand: { value: "Bag &amp; co", matchLevel: "none", matchedWords: [] },
+    });
+
+    expect(
+      adaptHighlightResult(item, "bag", {
+        ...tags,
+        attributesToHighlight: ["brand"],
+      }, ["title"])
+    ).toMatchObject({
+      title: { value: "Bag &amp; co", matchLevel: "none" },
+      brand: { value: "[Bag] &amp; co" },
+    });
+  });
+
+  it("matches attributes inside arrays with or without the index", () => {
+    const item = {
+      authors: [{ name: "Bea" }, { name: "Ben" }],
+      tags: ["bag"],
+    };
+
+    const highlight = (attributesToHighlight: string[]) =>
+      adaptHighlightResult(item, "b", { ...tags, attributesToHighlight });
+
+    expect(highlight(["authors.name"])).toMatchObject({
+      authors: [{ name: { value: "[B]ea" } }, { name: { value: "[B]en" } }],
+      tags: [{ value: "bag", matchLevel: "none" }],
+    });
+    expect(highlight(["authors.1.name", "tags"])).toMatchObject({
+      authors: [{ name: { value: "Bea" } }, { name: { value: "[B]en" } }],
+      tags: [{ value: "[b]ag" }],
+    });
   });
 });
 

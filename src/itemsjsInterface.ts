@@ -36,7 +36,9 @@ export interface AdapterOptions {
 }
 
 export interface HighlightOptions {
-  // Defaults to every attribute, like Algolia with no searchableAttributes set
+  // Attributes to match the query in; the rest are returned unhighlighted.
+  // Defaults to the index's searchableFields, or every attribute when the
+  // index wasn't made with createIndex.
   attributesToHighlight?: ReadonlyArray<string>;
   highlightPreTag?: string;
   highlightPostTag?: string;

@@ -16,7 +16,8 @@ export function adaptResponse(
   response: ItemsJsResponse,
   query: string,
   processingTimeMS: number,
-  highlightOptions: HighlightOptions = {}
+  highlightOptions: HighlightOptions = {},
+  searchableFields?: ReadonlyArray<string>
 ): SearchResponse {
   const totalNumberOfPages = Math.ceil(
     response.pagination.total / response.pagination.per_page
@@ -24,7 +25,7 @@ export function adaptResponse(
 
   return {
     hits: response.data.items.map((item) =>
-      adaptHit(item, query, highlightOptions)
+      adaptHit(item, query, highlightOptions, searchableFields)
     ),
     page: response.pagination.page - 1,
     nbPages: totalNumberOfPages,
@@ -42,12 +43,18 @@ export function adaptResponse(
 export function adaptHit(
   item,
   query = "",
-  highlightOptions: HighlightOptions = {}
+  highlightOptions: HighlightOptions = {},
+  searchableFields?: ReadonlyArray<string>
 ): Hit<object> {
   return {
     objectID: item.id,
     ...item,
-    _highlightResult: adaptHighlightResult(item, query, highlightOptions),
+    _highlightResult: adaptHighlightResult(
+      item,
+      query,
+      highlightOptions,
+      searchableFields
+    ),
     // Like Algolia, only include snippets when attributes are requested
     ...(highlightOptions.attributesToSnippet?.length > 0 && {
       _snippetResult: adaptSnippetResult(item, query, highlightOptions),
@@ -287,19 +294,63 @@ const getMatchLevel = (matched: Set<number>, queryWords: string[]) => {
   return matched.size === queryWords.length ? "full" : "partial";
 };
 
+// Narrows the attributes to match in down to the ones that can include the
+// value at key, as paths relative to it. An empty path means the value is part
+// of an attribute. Array indexes are optional in the paths, so "authors.name"
+// and "authors.0.name" both match authors[0].name.
+function getChildAttributes(
+  attributes: string[][],
+  key: string,
+  isArrayIndex: boolean
+): string[][] {
+  const children = [];
+
+  attributes.forEach((attribute) => {
+    if (attribute.length === 0) {
+      children.push(attribute);
+      return;
+    }
+
+    if (attribute[0] === key) {
+      children.push(attribute.slice(1));
+    }
+
+    if (isArrayIndex) {
+      children.push(attribute);
+    }
+  });
+
+  return children;
+}
+
+// Like Typesense, every attribute is returned so any of them can be displayed
+// with the Highlight widget, but the query is only matched in
+// attributesToHighlight, which defaults to the index's searchable fields.
 export function adaptHighlightResult(
   item: object,
   query = "",
   {
-    attributesToHighlight = ["*"],
+    attributesToHighlight,
     highlightPostTag = DEFAULT_HIGHLIGHT_POST_TAG,
     highlightPreTag = DEFAULT_HIGHLIGHT_PRE_TAG,
-  }: HighlightOptions = {}
+  }: HighlightOptions = {},
+  searchableFields?: ReadonlyArray<string>
 ): Record<string, unknown> {
   const queryWords = getQueryWords(query);
   const foldedQueryWords = queryWords.map(fold);
 
-  return adaptAttributes(item, attributesToHighlight, (text) => {
+  const requested = attributesToHighlight ?? searchableFields ?? ["*"];
+
+  // With no query nothing can match, so skip looking for the attributes
+  let attributes: string[][] = [];
+
+  if (queryWords.length > 0) {
+    attributes = requested.includes("*")
+      ? [[]]
+      : requested.map((attribute) => attribute.split("."));
+  }
+
+  const highlight = (text: string) => {
     const { value, matched, fullyHighlighted } = highlightText(
       text,
       foldedQueryWords,
@@ -319,7 +370,58 @@ export function adaptHighlightResult(
         .map((i) => queryWords[i]),
       fullyHighlighted,
     };
-  });
+  };
+
+  const adaptValue = (value, valueAttributes: string[][]) => {
+    if (Array.isArray(value)) {
+      return value.map((element, i) =>
+        adaptValue(element, getChildAttributes(valueAttributes, String(i), true))
+      );
+    }
+
+    if (value !== null && typeof value === "object") {
+      return adaptObject(value, valueAttributes, () => true);
+    }
+
+    if (!["string", "number", "boolean"].includes(typeof value)) {
+      return undefined;
+    }
+
+    const text = String(value);
+
+    if (valueAttributes.some((attribute) => attribute.length === 0)) {
+      return highlight(text);
+    }
+
+    return { value: escapeHtml(text), matchLevel: "none", matchedWords: [] };
+  };
+
+  const adaptObject = (
+    object: object,
+    objectAttributes: string[][],
+    includeKey: (key: string) => boolean
+  ) => {
+    const result = {};
+
+    Object.keys(object).forEach((key) => {
+      const adapted = includeKey(key)
+        ? adaptValue(object[key], getChildAttributes(objectAttributes, key, false))
+        : undefined;
+
+      if (adapted !== undefined) {
+        result[key] = adapted;
+      }
+    });
+
+    return result;
+  };
+
+  // Skip objectID and internal fields such as itemsjs' _id and _geoloc
+  return adaptObject(
+    item,
+    attributes,
+    (key) => key !== "objectID" && !key.startsWith("_")
+  );
 }
 
 // Crops text to wordCount words, centred on the first word matching the query

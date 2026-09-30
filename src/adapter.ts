@@ -14,6 +14,10 @@ import {
 
 let index;
 
+// The searchableFields of each index made by createIndex, which hits are
+// highlighted in unless the request sets attributesToHighlight
+const searchableFields = new WeakMap<object, ReadonlyArray<string>>();
+
 export function getSearchClient(
   newIndex?: any,
   options?: AdapterOptions
@@ -28,6 +32,7 @@ export function getSearchClient(
 
 export function createIndex(data: object, options: ItemsJsOptions): any {
   index = itemsjs(data, options);
+  searchableFields.set(index, options.searchableFields);
   return index;
 }
 
@@ -62,7 +67,8 @@ export function performSearch(
         itemsJsRes,
         request.params.query,
         processingTimeMS,
-        request.params
+        request.params,
+        searchableFields.get(index)
       );
     });
 

@@ -196,17 +196,39 @@ describe("performSearch", () => {
       index
     );
 
-    expect(response.results[0].hits[0]._highlightResult).toStrictEqual({
-      title: {
+    expect(response.results[0].hits[0]._highlightResult.title).toStrictEqual(
+      {
         value:
           "Fjallraven - Foldsack No. 1 <ais-highlight-0000000000>Backpack</ais-highlight-0000000000>, Fits 15 Laptops",
         matchLevel: "full",
         matchedWords: ["backpack"],
         fullyHighlighted: false,
-      },
-    });
+      }
+    );
     expect(response.results[0].hits[0]._snippetResult).toStrictEqual({
       description: { value: "Your perfect pack for…", matchLevel: "none" },
+    });
+  });
+
+  it("Only matches the query in the searchable fields by default", async () => {
+    const index = createIndex(products, options);
+
+    const response: Readonly<SearchResponses> = await performSearch(
+      [
+        {
+          ...requests[0],
+          params: { ...requests[0].params, query: "backpack" },
+        },
+      ],
+      index
+    );
+
+    const highlightResult = response.results[0].hits[0]._highlightResult;
+
+    expect(highlightResult.title).toMatchObject({ matchLevel: "full" });
+    expect(highlightResult.description).toMatchObject({
+      matchLevel: "none",
+      matchedWords: [],
     });
   });
 
