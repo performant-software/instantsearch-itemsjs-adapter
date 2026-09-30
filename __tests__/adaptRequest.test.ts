@@ -151,6 +151,27 @@ describe("adaptNumericFilters tests", () => {
     ).toStrictEqual([{ year: 1.5 }]);
   });
 
+  it("Matches an array field if any of its values matches", () => {
+    const events = [
+      { id: 1, years: [1850, 1900] },
+      { id: 2, years: [-650, -600] },
+      { id: 3, years: [1870] },
+      { id: 4, years: [] },
+    ];
+
+    const filter = (ranges) => {
+      const filters = adaptNumericFilters(ranges);
+      return events
+        .filter((item) => filters.every((f) => f(item)))
+        .map(({ id }) => id);
+    };
+
+    expect(filter(["years>=1800", "years<=1950"])).toStrictEqual([1, 3]);
+    expect(filter(["years>=-700", "years<=-500"])).toStrictEqual([2]);
+    expect(filter(["years=1900"])).toStrictEqual([1]);
+    expect(filter(["years!=1900"])).toStrictEqual([2, 3, 4]);
+  });
+
   it("Throws on an invalid filter", () => {
     expect(() => adaptNumericFilters(["year>=abc"])).toThrow(
       "Invalid numeric filter value: year>=abc"

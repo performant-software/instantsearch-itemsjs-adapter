@@ -115,24 +115,30 @@ export function adaptNumericFilters(ranges) {
       throw Error(`Invalid numeric filter value: ${range}`);
     }
 
+    // Like Algolia, an array field matches if any of its values does
+    const some = (item, test) => (Array.isArray(item[field])
+      ? item[field].some(test)
+      : test(item[field]));
+
     switch (operator) {
       case "<":
-        filters.push((item) => item[field] < value);
+        filters.push((item) => some(item, (v) => v < value));
         break;
       case "<=":
-        filters.push((item) => item[field] <= value);
+        filters.push((item) => some(item, (v) => v <= value));
         break;
       case "=":
-        filters.push((item) => item[field] == value); // Needs to be comparison operator "=="
+        filters.push((item) => some(item, (v) => v == value)); // Needs to be comparison operator "=="
         break;
       case "!=":
-        filters.push((item) => item[field] != value);
+        // Excludes an array field if any of its values is equal
+        filters.push((item) => !some(item, (v) => v == value));
         break;
       case ">":
-        filters.push((item) => item[field] > value);
+        filters.push((item) => some(item, (v) => v > value));
         break;
       case ">=":
-        filters.push((item) => item[field] >= value);
+        filters.push((item) => some(item, (v) => v >= value));
         break;
     }
   });
