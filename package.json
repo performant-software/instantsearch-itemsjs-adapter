@@ -3,17 +3,14 @@
   "version": "2.0.0",
   "description": "An adapter to use ItemsJs based client-side search with an Algolia Instantsearch front-end.",
   "type": "module",
-  "main": "./lib/adapter.js",
   "types": "./lib/adapter.d.ts",
   "exports": {
     ".": {
       "types": "./lib/adapter.d.ts",
-      "import": "./lib/adapter.js"
+      "default": "./lib/adapter.js"
     }
   },
-  "directories": {
-    "lib": "lib"
-  },
+  "sideEffects": false,
   "files": [
     "lib"
   ],
@@ -22,11 +19,13 @@
     "itemsjs": "^2.4.4"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
     "prettier": "2.4.1",
+    "publint": "^0.3.24",
     "tsup": "^8.5.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.0",
@@ -39,7 +38,8 @@
     "build": "tsup",
     "format": "prettier --write \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\"",
     "format:check": "prettier --check \"{src,__tests__}/**/*.ts\" \"*.{js,ts}\"",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "lint:package": "publint && attw --pack . --profile esm-only"
   },
   "keywords": [
     "itemsjs",
@@ -48,16 +48,16 @@
     "client-side",
     "typescript"
   ],
-  "author": "Unplatform",
+  "author": "Performant Software",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter.git"
+    "url": "git+https://github.com/performant-software/instantsearch-itemsjs-adapter.git"
   },
   "bugs": {
-    "url": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter/issues"
+    "url": "https://github.com/performant-software/instantsearch-itemsjs-adapter/issues"
   },
-  "homepage": "https://github.com/unplatform-io/instantsearch-itemsjs-adapter#readme",
+  "homepage": "https://github.com/performant-software/instantsearch-itemsjs-adapter#readme",
   "volta": {
     "node": "24.21.0",
     "npm": "12.1.0"
