@@ -1,4 +1,4 @@
-//Instantsearch request to itemsjs request
+// Instantsearch request to itemsjs request
 import {
   AdapterOptions,
   ItemsJsRequest,

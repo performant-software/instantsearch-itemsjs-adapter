@@ -1,4 +1,4 @@
-//Itemsjs response to Instantsearch response
+// Itemsjs response to Instantsearch response
 
 import {
   Hit,

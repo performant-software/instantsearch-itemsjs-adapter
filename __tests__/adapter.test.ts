@@ -161,16 +161,16 @@ describe("performSearch", () => {
     expect(response.results[1].params).toBe("");
     expect(response.results[1].facets).toStrictEqual({
       price: {
-        "109": 2,
-        "114": 1,
-        "168": 1,
-        "10.99": 1,
-        "109.95": 1,
-        "12.99": 1,
-        "15.99": 1,
-        "22.3": 1,
-        "29.95": 1,
-        "39.99": 1,
+        109: 2,
+        114: 1,
+        168: 1,
+        10.99: 1,
+        109.95: 1,
+        12.99: 1,
+        15.99: 1,
+        22.3: 1,
+        29.95: 1,
+        39.99: 1,
       },
     });
     expect(response.results[1].facets_stats).toStrictEqual({
