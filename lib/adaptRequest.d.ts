@@ -1,7 +1,7 @@
-import { MultipleQueriesQuery } from '@algolia/client-search';
-import { AdapterOptions, ItemsJsRequest } from './itemsjsInterface.js';
+import { SearchRequest, AdapterOptions, ItemsJsRequest } from './itemsjsInterface.js';
+import '@algolia/client-search';
 
-declare function adaptRequest(request: MultipleQueriesQuery, options?: AdapterOptions): ItemsJsRequest;
+declare function adaptRequest(request: SearchRequest, options?: AdapterOptions): ItemsJsRequest;
 declare function adaptPage(page: number): number;
 declare function adaptFilters(instantsearchFacets: any): {};
 declare function filterRegex(itemsJsFacets: any, facet: any): any;

@@ -1,9 +1,9 @@
-import { MultipleQueriesQuery, MultipleQueriesResponse, SearchForFacetValuesResponse } from '@algolia/client-search';
-import { AdapterOptions, SearchClient, ItemsJsOptions, SearchForFacetValuesQuery, ItemsJsBucket } from './itemsjsInterface.js';
+import { SearchForFacetValuesResponse } from '@algolia/client-search';
+import { AdapterOptions, SearchClient, ItemsJsOptions, SearchRequest, SearchResponses, SearchForFacetValuesQuery, ItemsJsBucket } from './itemsjsInterface.js';
 
 declare function getSearchClient(newIndex?: any, options?: AdapterOptions): SearchClient;
 declare function createIndex(data: object, options: ItemsJsOptions): any;
-declare function performSearch(requests: MultipleQueriesQuery[], index: any, options?: AdapterOptions): Readonly<Promise<MultipleQueriesResponse<object>>>;
+declare function performSearch(requests: SearchRequest[], index: any, options?: AdapterOptions): Readonly<Promise<SearchResponses>>;
 declare function performSearchForFacetValues(requests: SearchForFacetValuesQuery[], index: any, options?: AdapterOptions): Readonly<Promise<ItemsJsBucket[][]>>;
 declare function searchForFacetValues(requests: SearchForFacetValuesQuery[], index: any, options?: AdapterOptions): Readonly<Promise<SearchForFacetValuesResponse[]>>;
 

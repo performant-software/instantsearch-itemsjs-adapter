@@ -1,12 +1,23 @@
-import { MultipleQueriesQuery, MultipleQueriesResponse, SearchForFacetValuesResponse, SearchForFacetValuesQueryParams, SearchOptions, Hit } from '@algolia/client-search';
+import { SearchForFacetValuesResponse, SearchResponse, SearchParamsObject, Hit } from '@algolia/client-search';
 
 interface SearchClient {
-    search: (queries: MultipleQueriesQuery[]) => Readonly<Promise<MultipleQueriesResponse<object>>>;
+    search: (queries: SearchRequest[]) => Readonly<Promise<SearchResponses>>;
     searchForFacetValues: (queries: SearchForFacetValuesQuery[]) => Readonly<Promise<SearchForFacetValuesResponse[]>>;
+}
+interface SearchResponses {
+    results: Array<SearchResponse<object>>;
+}
+interface SearchRequest {
+    indexName: string;
+    params: SearchParamsObject;
 }
 interface SearchForFacetValuesQuery {
     indexName: string;
-    params: SearchForFacetValuesQueryParams & SearchOptions;
+    params: SearchParamsObject & {
+        facetName: string;
+        facetQuery?: string;
+        maxFacetHits?: number;
+    };
 }
 interface AdapterOptions {
     geoLocationField?: string;
@@ -61,4 +72,4 @@ interface ItemsJsBucket {
     selected: boolean;
 }
 
-export { AdapterOptions, HighlightOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery };
+export { AdapterOptions, HighlightOptions, ItemsJsBucket, ItemsJsOptions, ItemsJsRequest, ItemsJsResponse, SearchClient, SearchForFacetValuesQuery, SearchRequest, SearchResponses };
