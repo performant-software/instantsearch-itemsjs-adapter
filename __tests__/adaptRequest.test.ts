@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { SearchRequest } from "../src/itemsjsInterface";
 import {
   adaptPage,
