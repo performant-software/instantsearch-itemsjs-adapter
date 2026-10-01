@@ -70,6 +70,8 @@ The adapter applies `insideBoundingBox` (as sent by the GeoSearch widget or `use
 const searchClient = getSearchClient(index, { geoLocationField: "coordinates" });
 ```
 
+A dotted field such as `places.coordinates` reads a top-level field with that exact name when an item has one. Otherwise it reads `coordinates` from the object or array of objects in `places`, and the item matches when any of them is inside the box.
+
 `performSearch` and `searchForFacetValues` accept the same options as a third argument.
 
 ## Demo

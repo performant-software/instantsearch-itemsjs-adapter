@@ -214,16 +214,40 @@ export function adaptBoundingBox(
       : point.lng >= southWest.lng && point.lng <= northEast.lng;
   };
 
-  // An item with several locations matches when any of them is inside the box
-  return (item) => {
-    const value = item[field];
-
+  // A field with several locations matches when any of them is inside the box
+  const matches = (value) => {
     if (!isLocationList(value)) {
       return isInside(value);
     }
 
     for (const location of value) {
       if (isInside(location)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  // A dotted field, e.g. "places.coordinates", can also point into nested records, e.g. { places: [{ coordinates }] }
+  const index = field.indexOf(".");
+  const parent = index < 0 ? null : field.substring(0, index);
+  const child = index < 0 ? null : field.substring(index + 1);
+
+  return (item) => {
+    // Prefer a top-level field, whose name can itself contain dots
+    if (field in item || parent === null) {
+      return matches(item[field]);
+    }
+
+    const nested = item[parent];
+
+    if (!Array.isArray(nested)) {
+      return matches(nested?.[child]);
+    }
+
+    for (const record of nested) {
+      if (matches(record?.[child])) {
         return true;
       }
     }
