@@ -64,7 +64,7 @@ const searchClient = getSearchClient(index);
 
 ### Geosearch
 
-The adapter applies `insideBoundingBox` (as sent by the GeoSearch widget or `useGeoSearch`) as a filter. By default it reads each item's location from `_geoloc`, as either `{ lat, lng }` or `[lat, lng]`. Pass `geoLocationField` to read it from another field:
+The adapter applies `insideBoundingBox` (as sent by the GeoSearch widget or `useGeoSearch`) as a filter. By default it reads each item's location from `_geoloc`, as either `{ lat, lng }` or `[lat, lng]`, or a list of either; an item with several locations matches when any of them is inside the box. Pass `geoLocationField` to read it from another field:
 
 ```js
 const searchClient = getSearchClient(index, { geoLocationField: "coordinates" });
