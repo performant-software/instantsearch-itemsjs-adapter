@@ -195,11 +195,6 @@ function isLocationList(value): boolean {
   return value.some((location) => location && typeof location === "object");
 }
 
-export function getLatLngs(value): Array<{ lat: number; lng: number }> {
-  const locations = isLocationList(value) ? value : [value];
-  return locations.map(getLatLng).filter((point) => point !== null);
-}
-
 export function adaptBoundingBox(
   insideBoundingBox: string | ReadonlyArray<ReadonlyArray<number>>,
   field: string
@@ -219,8 +214,7 @@ export function adaptBoundingBox(
       : point.lng >= southWest.lng && point.lng <= northEast.lng;
   };
 
-  // This runs for every item on every search, so it loops instead of building a list of points with getLatLngs. An
-  // item with several locations matches when any of them is inside the box.
+  // An item with several locations matches when any of them is inside the box
   return (item) => {
     const value = item[field];
 
