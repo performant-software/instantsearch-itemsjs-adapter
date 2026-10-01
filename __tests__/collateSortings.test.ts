@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createIndex } from "../src/adapter";
+import { createIndex, performSearch } from "../src/adapter";
 import { ItemsJsOptions } from "../src/itemsjsInterface";
 
 const data = [
@@ -96,5 +96,46 @@ describe("collated sortings", () => {
     createIndex(data, options);
 
     expect(options.sortings).toStrictEqual(sortings);
+  });
+});
+
+describe("relevance sort", () => {
+  const docs = [
+    { id: 1, title: "red car" },
+    { id: 2, title: "car car car" },
+    { id: 3, title: "blue boat" },
+    { id: 4, title: "car" },
+  ];
+  const docOptions: ItemsJsOptions = {
+    searchableFields: ["title"],
+    query: "",
+    sortings: { title_asc: { field: "title", order: "asc" } },
+  };
+
+  function search(index, indexName: string) {
+    return performSearch(
+      [{ indexName, params: { query: "car", hitsPerPage: 10, page: 0 } }],
+      index
+    ).then(({ results }) => results[0].hits.map((hit) => hit["title"]));
+  }
+
+  it("keeps relevance order when the index name isn't a sorting", async () => {
+    const index = createIndex(docs, docOptions);
+
+    expect(await search(index, "instant_search")).toStrictEqual([
+      "car car car",
+      "car",
+      "red car",
+    ]);
+  });
+
+  it("still applies a named sorting", async () => {
+    const index = createIndex(docs, docOptions);
+
+    expect(await search(index, "title_asc")).toStrictEqual([
+      "car",
+      "car car car",
+      "red car",
+    ]);
   });
 });

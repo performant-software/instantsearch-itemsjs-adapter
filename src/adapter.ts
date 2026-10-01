@@ -20,6 +20,11 @@ let index;
 // highlighted in unless the request sets attributesToHighlight
 const searchableFields = new WeakMap<object, ReadonlyArray<string>>();
 
+// The sortings of each index made by createIndex. Any other sort, such as the
+// index name InstantSearch sends for relevance, is dropped so itemsjs keeps
+// its relevance order and only fetches the requested page.
+const sortingNames = new WeakMap<object, ReadonlySet<string>>();
+
 export function getSearchClient(
   newIndex?: any,
   options?: AdapterOptions
@@ -48,6 +53,7 @@ export function createIndex(
 
   index = itemsjs(data, options);
   searchableFields.set(index, options.searchableFields);
+  sortingNames.set(index, new Set(Object.keys(options.sortings || {})));
   return index;
 }
 
@@ -60,6 +66,11 @@ export function performSearch(
     let processingTimeMS = 0;
     const responses = requests.map((request) => {
       const adaptedRequest = adaptRequest(request, options);
+      const sortings = sortingNames.get(index);
+      if (sortings && !sortings.has(adaptedRequest.sort)) {
+        delete adaptedRequest.sort;
+      }
+
       const itemsJsRes = index.search(adaptedRequest);
 
       processingTimeMS = processingTimeMS + itemsJsRes.timings.total;
