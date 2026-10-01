@@ -182,12 +182,21 @@ export function getLatLng(value): { lat: number; lng: number } | null {
   return null;
 }
 
-export function getLatLngs(value): Array<{ lat: number; lng: number }> {
-  const isList =
-    Array.isArray(value) &&
-    value.some((location) => location && typeof location === "object");
+function isLocationList(value): boolean {
+  if (!Array.isArray(value)) {
+    return false;
+  }
 
-  const locations = isList ? value : [value];
+  // Skip the callback for the common [lat, lng] case, since this runs for every item on every search
+  if (typeof value[0] === "number" && typeof value[1] === "number" && value.length === 2) {
+    return false;
+  }
+
+  return value.some((location) => location && typeof location === "object");
+}
+
+export function getLatLngs(value): Array<{ lat: number; lng: number }> {
+  const locations = isLocationList(value) ? value : [value];
   return locations.map(getLatLng).filter((point) => point !== null);
 }
 
@@ -198,8 +207,10 @@ export function adaptBoundingBox(
   const { northEast, southWest } = parseBoundingBox(insideBoundingBox);
   const crossesAntimeridian = southWest.lng > northEast.lng;
 
-  const isInside = (point: { lat: number; lng: number }) => {
-    if (point.lat < southWest.lat || point.lat > northEast.lat) {
+  const isInside = (location) => {
+    const point = getLatLng(location);
+
+    if (!point || point.lat < southWest.lat || point.lat > northEast.lat) {
       return false;
     }
 
@@ -208,6 +219,21 @@ export function adaptBoundingBox(
       : point.lng >= southWest.lng && point.lng <= northEast.lng;
   };
 
-  // An item with several locations matches when any of them is inside the box
-  return (item) => getLatLngs(item[field]).some(isInside);
+  // This runs for every item on every search, so it loops instead of building a list of points with getLatLngs. An
+  // item with several locations matches when any of them is inside the box.
+  return (item) => {
+    const value = item[field];
+
+    if (!isLocationList(value)) {
+      return isInside(value);
+    }
+
+    for (const location of value) {
+      if (isInside(location)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
 }
