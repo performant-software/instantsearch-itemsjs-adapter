@@ -1,9 +1,11 @@
 import itemsjs from "itemsjs";
 import { adaptFacetHits, adaptResponse } from "./adaptResponse";
 import { adaptRequest } from "./adaptRequest";
+import { collateSortings } from "./collateSortings";
 import { SearchForFacetValuesResponse } from "@algolia/client-search";
 import {
   AdapterOptions,
+  IndexOptions,
   ItemsJsBucket,
   ItemsJsOptions,
   SearchClient,
@@ -30,7 +32,20 @@ export function getSearchClient(
   };
 }
 
-export function createIndex(data: object, options: ItemsJsOptions): any {
+export function createIndex(
+  data: object,
+  options: ItemsJsOptions,
+  indexOptions: IndexOptions = {}
+): any {
+  const { collator } = indexOptions;
+
+  if (options.sortings && collator !== false && Array.isArray(data)) {
+    options = {
+      ...options,
+      sortings: collateSortings(data, options.sortings, collator),
+    };
+  }
+
   index = itemsjs(data, options);
   searchableFields.set(index, options.searchableFields);
   return index;

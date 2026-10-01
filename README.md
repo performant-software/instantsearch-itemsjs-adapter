@@ -473,6 +473,16 @@ sortings:  {
 />
 ```
 
+`createIndex` sorts string fields with an [`Intl.Collator`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator), so "apple" sorts before "Zoo", "Éclair" sorts next to "eclair", and "item 2" sorts before "item 10". It uses the runtime's locale with numeric ordering by default. To use another locale or other options, pass a collator as the third argument:
+
+```js
+const index = createIndex(data, options, {
+	collator: new Intl.Collator("sv", { sensitivity: "base" }),
+});
+```
+
+Pass `collator: false` to keep ItemsJS's plain string comparison. Each string field in `sortings` is ranked once when the index is created, so searches cost no more than before. An index made by calling `itemsjs()` directly instead of `createIndex` keeps the plain string comparison.
+
 The usage of the `sortBy` widget differs from the one found in Aloglia's documentation.
 Instantsearch-ItemsJS-adapter does not make use of a [replica indices](https://www.algolia.com/doc/guides/sending-and-managing-data/manage-your-indices/#replicating-an-index) 
 
