@@ -22,6 +22,9 @@ interface SearchForFacetValuesQuery {
 interface AdapterOptions {
   geoLocationField?: string;
 }
+interface IndexOptions {
+  collator?: Intl.Collator | false;
+}
 interface ItemsJsOptions {
   aggregations?: object;
   sortings?: object;
@@ -39,7 +42,7 @@ interface ItemsJsBucket {
 //#endregion
 //#region src/adapter.d.ts
 export declare function getSearchClient(newIndex?: any, options?: AdapterOptions): SearchClient;
-export declare function createIndex(data: object, options: ItemsJsOptions): any;
+export declare function createIndex(data: object, options: ItemsJsOptions, indexOptions?: IndexOptions): any;
 export declare function performSearch(requests: SearchRequest[], index: any, options?: AdapterOptions): Readonly<Promise<SearchResponses>>;
 export declare function performSearchForFacetValues(requests: SearchForFacetValuesQuery[], index: any, options?: AdapterOptions): Readonly<Promise<ItemsJsBucket[][]>>;
 export declare function searchForFacetValues(requests: SearchForFacetValuesQuery[], index: any, options?: AdapterOptions): Readonly<Promise<SearchForFacetValuesResponse[]>>;
