@@ -9,6 +9,7 @@ import {
   filterRegex,
   adaptBoundingBox,
   getLatLng,
+  getLatLngs,
   parseBoundingBox,
   wrapLongitude,
 } from "../src/adaptRequest";
@@ -329,6 +330,33 @@ describe("bounding box tests", () => {
     expect(getLatLng([1, 2])).toStrictEqual({ lat: 1, lng: 2 });
     expect(getLatLng(undefined)).toBeNull();
     expect(getLatLng([1])).toBeNull();
+  });
+
+  it("getLatLngs should read single locations and lists of locations", () => {
+    expect(getLatLngs([1, 2])).toStrictEqual([{ lat: 1, lng: 2 }]);
+    expect(getLatLngs({ lat: 1, lng: 2 })).toStrictEqual([{ lat: 1, lng: 2 }]);
+    expect(getLatLngs([[1, 2], [3, 4]])).toStrictEqual([
+      { lat: 1, lng: 2 },
+      { lat: 3, lng: 4 },
+    ]);
+    expect(getLatLngs([{ lat: 1, lng: 2 }, [3, 4]])).toStrictEqual([
+      { lat: 1, lng: 2 },
+      { lat: 3, lng: 4 },
+    ]);
+    expect(getLatLngs([[1, 2], null])).toStrictEqual([{ lat: 1, lng: 2 }]);
+    expect(getLatLngs([null, { lat: 1, lng: 2 }])).toStrictEqual([
+      { lat: 1, lng: 2 },
+    ]);
+    expect(getLatLngs([])).toStrictEqual([]);
+    expect(getLatLngs(undefined)).toStrictEqual([]);
+  });
+
+  it("adaptBoundingBox should keep items with any location inside the box", () => {
+    const filter = adaptBoundingBox("45,-70,40,-80", "places.coordinates");
+
+    expect(filter({ "places.coordinates": [[0, 0], [42, -75]] })).toBe(true);
+    expect(filter({ "places.coordinates": [[0, 0], [46, -75]] })).toBe(false);
+    expect(filter({ "places.coordinates": [] })).toBe(false);
   });
 
   it("adaptBoundingBox should keep items inside the box", () => {
