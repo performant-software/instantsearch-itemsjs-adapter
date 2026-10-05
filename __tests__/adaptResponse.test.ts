@@ -100,6 +100,31 @@ describe("adaptHighlightResult tests", () => {
     });
   });
 
+  it("keeps empty array elements as empty values", () => {
+    const item = { tags: ["red", null], dates: [{ start: [null, 1900] }] };
+    const empty = { value: "", matchLevel: "none", matchedWords: [] };
+
+    expect(adaptHighlightResult(item, "red", tags)).toStrictEqual({
+      tags: [
+        {
+          value: "[red]",
+          matchLevel: "full",
+          matchedWords: ["red"],
+          fullyHighlighted: true,
+        },
+        empty,
+      ],
+      dates: [
+        {
+          start: [
+            empty,
+            { value: "1900", matchLevel: "none", matchedWords: [] },
+          ],
+        },
+      ],
+    });
+  });
+
   it("skips objectID, internal fields and empty values", () => {
     const item = {
       objectID: "1",
@@ -247,6 +272,20 @@ describe("adaptSnippetResult tests", () => {
       description: {
         value: "one two three four five six seven eight nine ten…",
       },
+    });
+  });
+
+  it("keeps empty array elements as empty values", () => {
+    expect(
+      adaptSnippetResult({ tags: ["red", null] }, "red", {
+        ...tags,
+        attributesToSnippet: ["tags"],
+      })
+    ).toStrictEqual({
+      tags: [
+        { value: "[red]", matchLevel: "full" },
+        { value: "", matchLevel: "none" },
+      ],
     });
   });
 

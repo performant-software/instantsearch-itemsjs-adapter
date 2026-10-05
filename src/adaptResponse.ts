@@ -188,7 +188,9 @@ function highlightText(
 
 // Calls adaptText on every primitive value of the requested attributes, keeping
 // the shape of arrays and nested objects. Attributes may be written as
-// "name:count", e.g. "description:20" in attributesToSnippet.
+// "name:count", e.g. "description:20" in attributesToSnippet. Empty array
+// elements are adapted as empty text, since InstantSearch throws on undefined
+// elements and removing them would shift the indexes.
 function adaptAttributes(
   item: object,
   attributes: ReadonlyArray<string>,
@@ -196,7 +198,9 @@ function adaptAttributes(
 ): Record<string, unknown> {
   const adaptValue = (value, count?: number) => {
     if (Array.isArray(value)) {
-      return value.map((element) => adaptValue(element, count));
+      return value.map(
+        (element) => adaptValue(element, count) ?? adaptText("", count)
+      );
     }
 
     if (value !== null && typeof value === "object") {
@@ -361,11 +365,13 @@ export function adaptHighlightResult(
 
   const adaptValue = (value, valueAttributes: string[][]) => {
     if (Array.isArray(value)) {
-      return value.map((element, i) =>
-        adaptValue(
-          element,
-          getChildAttributes(valueAttributes, String(i), true)
-        )
+      // Like adaptAttributes, keep empty elements so the indexes line up
+      return value.map(
+        (element, i) =>
+          adaptValue(
+            element,
+            getChildAttributes(valueAttributes, String(i), true)
+          ) ?? { value: "", matchLevel: "none", matchedWords: [] }
       );
     }
 
